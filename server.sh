@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # =========================================================
-#   ANDROID HOME SERVER - All in One
+#   ANDROID HOME SERVER - All in One (AVENOX THEME)
 #   Dashboard + File Manager + Web Terminal (ttyd)
 # =========================================================
 
@@ -168,7 +168,7 @@ SH
 chmod +x "$SERVER_DIR/info.sh"
 
 # =========================================================
-# index.html — Dashboard
+# index.html — Dashboard (AVENOX THEME)
 # =========================================================
 cat > "$SERVER_DIR/index.html" <<'HTML'
 <!DOCTYPE html>
@@ -180,133 +180,171 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
-      --bg: #0b1120; --card: #111c33; --card-2: #0f172a; --border: #1e293b;
-      --text: #e2e8f0; --muted: #94a3b8; --accent: #22d3ee;
-      --green: #4ade80; --amber: #fbbf24; --red: #f87171;
-      --blue: #60a5fa; --purple: #a78bfa;
+      --bg: #000000; --bg-soft: #0a0a0a;
+      --card: #0d0d0d; --card-2: #111111; --border: #1f1f1f;
+      --text: #f5f5f5; --muted: #8a8a8a;
+      --accent: #00e0c6; --accent-2: #00b3a0;
+      --green: #00e0c6; --amber: #ffb020; --red: #ff4d4d;
+      --blue: #4db8ff; --purple: #a78bfa;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 60%);
+      background: radial-gradient(circle at 50% 0%, #0a0a0a 0%, #000 70%);
       color: var(--text); min-height: 100vh; padding: 24px 16px;
     }
     .wrap { max-width: 760px; margin: 0 auto; }
     header { text-align: center; margin-bottom: 28px; }
+
     .logo {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 64px; height: 64px; border-radius: 18px;
-      background: linear-gradient(135deg, #06b6d4, #3b82f6);
-      box-shadow: 0 8px 24px rgba(6,182,212,.35);
-      font-size: 28px; color: white; margin-bottom: 12px;
+      width: 64px; height: 64px; border-radius: 16px;
+      background: #0d0d0d;
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 24px rgba(0,224,198,.25), inset 0 0 20px rgba(0,224,198,.08);
+      font-size: 26px; color: var(--accent); margin-bottom: 14px;
     }
     h1 {
-      font-size: 22px; font-weight: 700; letter-spacing: -.3px;
-      background: linear-gradient(90deg, #22d3ee, #4ade80);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: 22px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase;
+      color: var(--text);
     }
-    .sub { font-size: 13px; color: var(--muted); margin-top: 6px;
-      display: inline-flex; align-items: center; gap: 6px; }
+    h1 span { color: var(--accent); }
+    .sub {
+      font-size: 12px; color: var(--muted); margin-top: 8px;
+      display: inline-flex; align-items: center; gap: 8px;
+      letter-spacing: 1.5px; text-transform: uppercase;
+    }
     .dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--green); box-shadow: 0 0 10px var(--green);
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
       animation: pulse 1.6s infinite;
     }
     @keyframes pulse {
       0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .5; transform: scale(.85); }
+      50% { opacity: .4; transform: scale(.8); }
     }
-    .nav { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+
+    .nav { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
     .nav a {
-      color: var(--muted); text-decoration: none; font-size: 13px;
-      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+      color: var(--muted); text-decoration: none; font-size: 12px;
+      padding: 8px 14px; border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      letter-spacing: .5px; text-transform: uppercase;
       transition: .2s;
     }
-    .nav a:hover { color: var(--accent); border-color: var(--accent); background: rgba(34,211,238,.08); }
-    .nav a.active { color: var(--accent); border-color: var(--accent); background: rgba(34,211,238,.08); }
+    .nav a:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(0,224,198,.2); }
+    .nav a.active { color: var(--accent); border-color: var(--accent); background: rgba(0,224,198,.06); }
+
     .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
     @media (min-width: 620px) {
       .grid { grid-template-columns: 1fr 1fr; }
       .card.full { grid-column: 1 / -1; }
     }
+
     .card {
       background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);
-      border: 1px solid var(--border); border-radius: 16px;
+      border: 1px solid var(--border); border-radius: 14px;
       padding: 18px; position: relative; overflow: hidden;
     }
     .card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: .5;
+      opacity: .6;
     }
+
     .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .card-head i.ic {
       width: 34px; height: 34px;
       display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 10px; font-size: 15px; color: white; flex-shrink: 0;
+      border-radius: 9px; font-size: 14px;
+      background: #0a0a0a; border: 1px solid var(--border);
+      color: var(--accent);
+      flex-shrink: 0;
     }
-    .ic-cpu  { background: linear-gradient(135deg,#8b5cf6,#a78bfa); }
-    .ic-ram  { background: linear-gradient(135deg,#0ea5e9,#22d3ee); }
-    .ic-disk { background: linear-gradient(135deg,#f59e0b,#fbbf24); }
-    .ic-net  { background: linear-gradient(135deg,#10b981,#4ade80); }
-    .card-head h2 { font-size: 14px; font-weight: 600; letter-spacing: .3px; }
+    .ic-cpu, .ic-ram, .ic-disk, .ic-net {
+      background: #0a0a0a !important;
+      color: var(--accent) !important;
+      border: 1px solid var(--border);
+    }
+    .card-head h2 {
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted);
+    }
     .card-head .badge {
-      margin-left: auto; font-size: 11px; color: var(--muted);
-      background: rgba(148,163,184,.1); padding: 3px 8px;
+      margin-left: auto; font-size: 10px; color: var(--accent);
+      background: rgba(0,224,198,.06); padding: 3px 9px;
+      border: 1px solid rgba(0,224,198,.25);
       border-radius: 6px; white-space: nowrap;
+      letter-spacing: 1px; text-transform: uppercase;
     }
+
     .chip {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; background: rgba(15,23,42,.7);
-      border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; background: #080808;
+      border: 1px solid var(--border); border-radius: 9px;
       margin-bottom: 12px; font-size: 13px;
     }
-    .chip i { color: var(--purple); }
-    .chip .model { font-weight: 600; color: #f1f5f9;
+    .chip i { color: var(--accent); }
+    .chip .model { font-weight: 600; color: #ededed;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .chip .arch {
-      margin-left: auto; font-size: 11px; color: var(--muted);
-      background: rgba(148,163,184,.1); padding: 2px 8px; border-radius: 6px;
+      margin-left: auto; font-size: 10px; color: var(--muted);
+      background: #0f0f0f; padding: 3px 8px; border-radius: 5px;
+      border: 1px solid var(--border);
+      letter-spacing: 1px; text-transform: uppercase;
     }
+
     .row { display: flex; justify-content: space-between; align-items: center;
-      font-size: 13px; margin: 7px 0; }
-    .row .lbl { color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-    .row .val { font-weight: 600; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+      font-size: 13px; margin: 8px 0; }
+    .row .lbl { color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+    .row .lbl i { color: var(--accent); opacity: .8; font-size: 11px; }
+    .row .val { font-weight: 600; color: #ededed; font-variant-numeric: tabular-nums; }
+
     .bar {
-      height: 8px; border-radius: 6px;
-      background: rgba(148,163,184,.12); overflow: hidden; margin-top: 12px;
+      height: 6px; border-radius: 4px;
+      background: #080808; overflow: hidden; margin-top: 14px;
+      border: 1px solid var(--border);
     }
     .fill {
-      height: 100%; width: 0%; border-radius: 6px;
-      background: linear-gradient(90deg,#22c55e,#4ade80);
+      height: 100%; width: 0%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent-2), var(--accent));
+      box-shadow: 0 0 12px rgba(0,224,198,.5);
       transition: width .45s ease, background .3s;
     }
-    .fill.warn { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
-    .fill.crit { background: linear-gradient(90deg,#ef4444,#f87171); }
-    .big-pct { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .pct-green { color: var(--green); }
+    .fill.warn { background: linear-gradient(90deg,#cc8c1a,#ffb020); box-shadow: 0 0 12px rgba(255,176,32,.5); }
+    .fill.crit { background: linear-gradient(90deg,#cc3d3d,#ff4d4d); box-shadow: 0 0 12px rgba(255,77,77,.5); }
+
+    .big-pct { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+    .pct-green { color: var(--accent); }
     .pct-amber { color: var(--amber); }
     .pct-red   { color: var(--red); }
+
     .net-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .net-box {
-      background: rgba(15,23,42,.7); border: 1px solid var(--border);
-      border-radius: 12px; padding: 14px 10px; text-align: center;
+      background: #080808; border: 1px solid var(--border);
+      border-radius: 11px; padding: 16px 10px; text-align: center;
     }
-    .net-box i { font-size: 16px; margin-bottom: 6px; display: block; }
+    .net-box i { font-size: 15px; margin-bottom: 8px; display: block; color: var(--accent); }
     .net-box .num {
       font-size: 20px; font-weight: 700;
       font-variant-numeric: tabular-nums; line-height: 1.2;
+      color: var(--accent);
     }
     .net-box .lbl {
-      font-size: 11px; color: var(--muted); margin-top: 4px;
-      text-transform: uppercase; letter-spacing: .5px;
+      font-size: 10px; color: var(--muted); margin-top: 6px;
+      text-transform: uppercase; letter-spacing: 1.5px;
     }
-    .dl i, .dl .num { color: var(--green); }
+    .dl i, .dl .num { color: var(--accent); }
     .ul i, .ul .num { color: var(--blue); }
+
     footer {
-      text-align: center; font-size: 12px; color: var(--muted);
-      margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);
+      text-align: center; font-size: 11px; color: var(--muted);
+      margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border);
+      letter-spacing: 1px; text-transform: uppercase;
     }
     footer i { color: var(--accent); }
   </style>
@@ -315,7 +353,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
   <div class="wrap">
     <header>
       <div class="logo"><i class="fa-solid fa-server"></i></div>
-      <h1>Home Server Dashboard</h1>
+      <h1>Home <span>Server</span></h1>
       <div class="sub"><span class="dot"></span>Live monitoring · Android</div>
       <div class="nav">
         <a href="/" class="active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
@@ -450,7 +488,7 @@ setInterval(refresh, 2000);
 HTML
 
 # =========================================================
-# files.html — File Manager (Upload, Download, Hapus)
+# files.html — File Manager (AVENOX THEME)
 # =========================================================
 cat > "$SERVER_DIR/files.html" <<'HTML'
 <!DOCTYPE html>
@@ -461,44 +499,56 @@ cat > "$SERVER_DIR/files.html" <<'HTML'
 <title>File Manager · Home Server</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-  :root{--bg:#0b1120;--card:#111c33;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#22d3ee;--green:#4ade80;--red:#f87171;--amber:#fbbf24;}
+  :root{--bg:#000;--card:#0d0d0d;--card-2:#111;--border:#1f1f1f;--text:#f5f5f5;--muted:#8a8a8a;--accent:#00e0c6;--accent-2:#00b3a0;--green:#00e0c6;--red:#ff4d4d;--amber:#ffb020;--blue:#4db8ff;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at top,#1e293b 0%,var(--bg) 60%);color:var(--text);min-height:100vh;padding:20px 14px}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh;padding:20px 14px}
   .wrap{max-width:820px;margin:0 auto}
   header{text-align:center;margin-bottom:20px}
-  h1{font-size:20px;background:linear-gradient(90deg,#22d3ee,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .sub{font-size:12px;color:var(--muted);margin-top:4px}
-  .nav{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);transition:.2s}
-  .nav a:hover,.nav a.active{color:var(--accent);border-color:var(--accent);background:rgba(34,211,238,.08)}
+  h1{font-size:18px;text-transform:uppercase;letter-spacing:1px;color:var(--text)}
+  h1 i{color:var(--accent)}
+  .sub{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
+  .nav{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+  .nav a{color:var(--muted);text-decoration:none;font-size:11px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);letter-spacing:.8px;text-transform:uppercase;transition:.2s}
+  .nav a:hover,.nav a.active{color:var(--accent);border-color:var(--accent);background:rgba(0,224,198,.05);box-shadow:0 0 12px rgba(0,224,198,.18)}
+
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
-  .btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s}
-  .btn:hover{border-color:var(--accent);color:var(--accent)}
-  .btn.primary{background:linear-gradient(135deg,#06b6d4,#3b82f6);border:none;color:white}
+  .btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s;letter-spacing:.5px}
+  .btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(0,224,198,.15)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent-2),var(--accent));border:none;color:#000;font-weight:600}
   .btn.danger{border-color:var(--red);color:var(--red)}
-  .btn.danger:hover{background:rgba(248,113,113,.1)}
-  .path{flex:1;min-width:200px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:monospace}
-  .card{background:linear-gradient(160deg,var(--card) 0%,#0f172a 100%);border:1px solid var(--border);border-radius:14px;padding:14px}
-  .item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;border-bottom:1px solid var(--border);transition:.15s}
+  .btn.danger:hover{background:rgba(255,77,77,.08);box-shadow:0 0 10px rgba(255,77,77,.2)}
+
+  .path{flex:1;min-width:200px;padding:9px 12px;background:#080808;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:ui-monospace,monospace}
+  .path:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,224,198,.12)}
+
+  .card{background:linear-gradient(160deg,var(--card) 0%,var(--card-2) 100%);border:1px solid var(--border);border-radius:12px;padding:10px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.5}
+
+  .item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:8px;border-bottom:1px solid var(--border);transition:.15s}
   .item:last-child{border-bottom:none}
-  .item:hover{background:rgba(34,211,238,.05)}
-  .item .ico{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(148,163,184,.1);color:var(--accent);flex-shrink:0}
+  .item:hover{background:rgba(0,224,198,.04)}
+  .item .ico{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#080808;border:1px solid var(--border);color:var(--accent);flex-shrink:0;font-size:13px}
   .item .ico.dir{color:var(--amber)}
   .item .meta{flex:1;min-width:0}
-  .item .name{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .item .info{font-size:11px;color:var(--muted);margin-top:2px}
+  .item .name{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ededed}
+  .item .info{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
   .item .actions{display:flex;gap:6px}
-  .item .actions button{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;transition:.2s}
+  .item .actions button{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:#080808;color:var(--muted);cursor:pointer;font-size:12px;transition:.2s}
   .item .actions button:hover{border-color:var(--red);color:var(--red)}
-  .item .actions button.dl:hover{border-color:var(--green);color:var(--green)}
-  .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
-  .drop{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:14px;transition:.2s}
-  .drop.over{border-color:var(--accent);background:rgba(34,211,238,.05);color:var(--accent)}
+  .item .actions button.dl:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 8px rgba(0,224,198,.25)}
+  .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+  .drop{border:1px dashed var(--border);border-radius:12px;padding:26px;text-align:center;color:var(--muted);font-size:12px;margin-bottom:14px;transition:.2s;background:#080808;letter-spacing:.5px}
+  .drop.over{border-color:var(--accent);background:rgba(0,224,198,.05);color:var(--accent);box-shadow:0 0 20px rgba(0,224,198,.15) inset}
+  .drop i{color:var(--accent)}
+
   .token-bar{display:flex;gap:8px;margin-bottom:14px}
-  .token-bar input{flex:1;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px}
-  .toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--accent);color:var(--text);padding:12px 18px;border-radius:10px;font-size:13px;opacity:0;transform:translateY(20px);transition:.3s;pointer-events:none;z-index:99}
+  .token-bar input{flex:1;padding:9px 12px;background:#080808;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:ui-monospace,monospace}
+  .token-bar input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,224,198,.12)}
+
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--accent);color:var(--accent);padding:12px 18px;border-radius:10px;font-size:12px;opacity:0;transform:translateY(20px);transition:.3s;pointer-events:none;z-index:99;letter-spacing:.5px;box-shadow:0 0 20px rgba(0,224,198,.2)}
   .toast.show{opacity:1;transform:translateY(0)}
-  .toast.err{border-color:var(--red);color:var(--red)}
+  .toast.err{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(255,77,77,.2)}
 </style>
 </head>
 <body>
@@ -628,7 +678,6 @@ async function del(rel, isDir){
   }catch(e){ toast(e.message, true); }
 }
 
-// Upload
 async function uploadFiles(files){
   if(!files.length) return;
   const fd = new FormData();
@@ -664,7 +713,7 @@ refresh();
 HTML
 
 # =========================================================
-# terminal.html — Web Terminal (ttyd)
+# terminal.html — Web Terminal (AVENOX THEME)
 # =========================================================
 cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <!DOCTYPE html>
@@ -675,23 +724,28 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <title>Terminal · Home Server</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-  :root{--bg:#0b1120;--card:#111c33;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#22d3ee;--green:#4ade80;--red:#f87171;}
+  :root{--bg:#000;--card:#0d0d0d;--border:#1f1f1f;--text:#f5f5f5;--muted:#8a8a8a;--accent:#00e0c6;--green:#00e0c6;--red:#ff4d4d;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at top,#1e293b 0%,var(--bg) 60%);color:var(--text);min-height:100vh;padding:20px 14px;display:flex;flex-direction:column}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh;padding:20px 14px;display:flex;flex-direction:column}
   .wrap{max-width:1100px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column}
   header{text-align:center;margin-bottom:16px}
-  h1{font-size:20px;background:linear-gradient(90deg,#22d3ee,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .sub{font-size:12px;color:var(--muted);margin-top:4px}
-  .nav{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-  .nav a{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);transition:.2s}
-  .nav a:hover,.nav a.active{color:var(--accent);border-color:var(--accent);background:rgba(34,211,238,.08)}
-  .term-wrap{flex:1;background:#000;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:70vh;position:relative}
+  h1{font-size:18px;text-transform:uppercase;letter-spacing:1px}
+  h1 i{color:var(--accent)}
+  .sub{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
+  .nav{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+  .nav a{color:var(--muted);text-decoration:none;font-size:11px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);letter-spacing:.8px;text-transform:uppercase;transition:.2s}
+  .nav a:hover,.nav a.active{color:var(--accent);border-color:var(--accent);background:rgba(0,224,198,.05);box-shadow:0 0 12px rgba(0,224,198,.18)}
+
+  .term-wrap{flex:1;background:#000;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:70vh;position:relative;box-shadow:0 0 24px rgba(0,224,198,.08)}
   iframe{width:100%;height:100%;border:none;display:block;min-height:70vh}
-  .notice{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--muted);margin-bottom:14px}
-  .notice code{background:rgba(34,211,238,.1);color:var(--accent);padding:2px 6px;border-radius:4px;font-family:monospace}
-  .status{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:8px}
+
+  .notice{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:.3px}
+  .notice code{background:rgba(0,224,198,.08);color:var(--accent);padding:2px 6px;border-radius:4px;font-family:ui-monospace,monospace;font-size:11px}
+  .notice i{color:var(--accent)}
+
+  .status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;text-transform:uppercase}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
-  .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .dot.on{background:var(--accent);box-shadow:0 0 10px var(--accent)}
 </style>
 </head>
 <body>
@@ -842,7 +896,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 })
             return
 
-        # List file
         if path.startswith("/api/list"):
             if not self._check_auth():
                 return
@@ -872,7 +925,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._json(500, {"ok": False, "error": str(e)})
             return
 
-        # Cek status terminal
         if path.startswith("/api/terminal-status"):
             port = self._terminal_port()
             self._json(200, {"ok": True, "port": port})
@@ -884,7 +936,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         path = urllib.parse.urlparse(self.path).path
 
-        # Upload file
         if path == "/api/upload":
             if not self._check_auth():
                 return
@@ -920,7 +971,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._json(500, {"ok": False, "error": str(e)})
             return
 
-        # Hapus file/folder
         if path == "/api/delete":
             if not self._check_auth():
                 return
@@ -972,7 +1022,6 @@ fi
 if command -v ttyd >/dev/null 2>&1; then
   pkill -f "ttyd -p $TTYD_PORT" 2>/dev/null || true
   sleep 1
-  # -W = writable (bisa input), -p port, -t titleFixed
   nohup ttyd -p "$TTYD_PORT" -W -t titleFixed="Termux Shell" bash >/dev/null 2>&1 &
   sleep 1
   TTYD_STATUS="aktif di port $TTYD_PORT"
@@ -984,6 +1033,7 @@ echo
 echo "================================"
 echo "         SERVER SIAP"
 echo "================================"
+echo "Tema          : AVENOX (Black + Cyan Neon)"
 echo "Folder server : $SERVER_DIR"
 echo "Port web      : $PORT"
 echo "Port terminal : $TTYD_PORT ($TTYD_STATUS)"
