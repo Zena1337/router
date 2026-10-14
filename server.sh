@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # =========================================================
-#   ANDROID HOME SERVER - All in One (DARK MINIMAL THEME)
+#   ANDROID HOME SERVER - All in One (PERSISTENT SESSIONS)
 #   Dashboard + File Manager + Web Terminal (multi-sesi)
 # =========================================================
 
@@ -10,6 +10,7 @@ PORT=8080
 TTYD_BASE_PORT=7681
 TTYD_MAX_SESSIONS=6
 SERVER_DIR="$HOME/home-server"
+STATE_FILE="$HOME/.home-server-sessions.json"
 AUTH_TOKEN="${HOME_SERVER_TOKEN:-rahasia123}"
 
 echo "================================"
@@ -779,7 +780,7 @@ refresh();
 HTML
 
 # =========================================================
-# terminal.html — Multi-tab / Multi-sesi
+# terminal.html — Multi-tab / Multi-sesi + PERSISTEN
 # =========================================================
 cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <!DOCTYPE html>
@@ -910,6 +911,7 @@ function toast(msg, err=false){
   t._to = setTimeout(()=>t.className = "toast", 2600);
 }
 
+// Tab registry. Key = session id, value = {id, port, label, paneEl, iframe}
 const tabs = new Map();
 let activeId = null;
 let maxSessions = 6;
@@ -967,6 +969,20 @@ function setActive(id){
   renderTabs();
 }
 
+function addTabFromSession(s){
+  if (tabs.has(s.id)) return;
+  const label = s.label || `Terminal ${tabs.size + 1}`;
+  const paneEl = document.createElement("div");
+  paneEl.className = "term-pane";
+  paneEl.dataset.id = s.id;
+  const iframe = document.createElement("iframe");
+  iframe.src = `http://${location.hostname}:${s.port}`;
+  iframe.allow = "clipboard-read; clipboard-write";
+  paneEl.appendChild(iframe);
+  $("termHost").appendChild(paneEl);
+  tabs.set(s.id, { id: s.id, port: s.port, label, paneEl, iframe });
+}
+
 async function newTab(){
   if (tabs.size >= maxSessions){
     toast(`Maksimal ${maxSessions} sesi`, true);
@@ -979,23 +995,10 @@ async function newTab(){
       toast(d.error || "Gagal membuat sesi", true);
       return;
     }
-    const id = d.id;
-    const port = d.port;
-    const label = `Terminal ${tabs.size + 1}`;
-
-    const paneEl = document.createElement("div");
-    paneEl.className = "term-pane";
-    paneEl.dataset.id = id;
-    const iframe = document.createElement("iframe");
-    iframe.src = `http://${location.hostname}:${port}`;
-    iframe.allow = "clipboard-read; clipboard-write";
-    paneEl.appendChild(iframe);
-    $("termHost").appendChild(paneEl);
-
-    tabs.set(id, { id, port, label, paneEl, iframe });
-    setActive(id);
+    addTabFromSession({ id: d.id, port: d.port, label: d.label });
+    setActive(d.id);
     updateEmptyState();
-    toast(`Sesi ${label} dibuka (port ${port})`);
+    toast(`Sesi ${d.label} dibuka (port ${d.port})`);
   }catch(e){
     toast("Error: " + e.message, true);
   }
@@ -1031,6 +1034,7 @@ async function refreshStatus(){
     maxSessions = d.max || 6;
 
     const serverIds = new Set((d.sessions || []).map(s => s.id));
+    // hapus tab yang sudah tidak ada di server
     for (const [id, t] of [...tabs.entries()]){
       if (!serverIds.has(id)){
         t.paneEl.remove();
@@ -1038,18 +1042,9 @@ async function refreshStatus(){
         if (activeId === id) activeId = null;
       }
     }
+    // tambah tab untuk sesi server yang belum tampil (termasuk hasil restore)
     for (const s of (d.sessions || [])){
-      if (!tabs.has(s.id)){
-        const label = `Terminal ${tabs.size + 1}`;
-        const paneEl = document.createElement("div");
-        paneEl.className = "term-pane";
-        paneEl.dataset.id = s.id;
-        const iframe = document.createElement("iframe");
-        iframe.src = `http://${location.hostname}:${s.port}`;
-        paneEl.appendChild(iframe);
-        $("termHost").appendChild(paneEl);
-        tabs.set(s.id, { id: s.id, port: s.port, label, paneEl, iframe });
-      }
+      addTabFromSession(s);
     }
     if (!activeId && tabs.size > 0){
       setActive(tabs.keys().next().value);
@@ -1075,12 +1070,8 @@ async function refreshStatus(){
 $("addTab").addEventListener("click", newTab);
 $("emptyAdd").addEventListener("click", newTab);
 
-window.addEventListener("beforeunload", e => {
-  if (tabs.size > 0){
-    e.preventDefault();
-    e.returnValue = "";
-  }
-});
+// ⚠️ beforeunload TIDAK dipasang → biar bisa pindah halaman tanpa prompt.
+// Session tetap hidup di server karena ttyd jalan terpisah.
 
 refreshStatus();
 setInterval(refreshStatus, 5000);
@@ -1090,7 +1081,7 @@ setInterval(refreshStatus, 5000);
 HTML
 
 # =========================================================
-# server.py — HTTP Server + API + File Manager + Multi-sesi ttyd
+# server.py — dengan PERSISTEN SESSION (state file)
 # =========================================================
 cat > "$SERVER_DIR/server.py" <<PY
 #!/usr/bin/env python3
@@ -1111,15 +1102,110 @@ TTYD_MAX_SESSIONS = $TTYD_MAX_SESSIONS
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 AUTH_TOKEN = os.environ.get("HOME_SERVER_TOKEN", "$AUTH_TOKEN")
 ALLOWED_ROOT = os.path.expanduser("~")
+STATE_FILE = os.path.expanduser("~/.home-server-sessions.json")
 
 SESSIONS = {}
 SESSION_COUNTER = [0]
 
 
-def is_safe_path(base, path):
-    base = os.path.abspath(base)
-    target = os.path.abspath(os.path.join(base, path))
-    return target.startswith(base)
+# ========================================================
+# STATE FILE (persisten session)
+# ========================================================
+def load_state():
+    try:
+        with open(STATE_FILE, "r") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_state():
+    try:
+        data = {
+            "counter": SESSION_COUNTER[0],
+            "sessions": {
+                sid: {"port": s["port"], "pid": s["pid"], "label": s.get("label", sid)}
+                for sid, s in SESSIONS.items()
+            },
+        }
+        tmp = STATE_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, STATE_FILE)
+    except Exception as e:
+        print(f"[state] gagal simpan: {e}")
+
+
+def is_pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def is_port_listening(port):
+    try:
+        out = subprocess.check_output(
+            ["sh", "-c", f"ss -ltn 2>/dev/null | grep -E ':\\\\b{port}\\\\b' || netstat -ltn 2>/dev/null | grep -E ':\\\\b{port}\\\\b'"],
+            stderr=subprocess.DEVNULL, timeout=2,
+        ).decode()
+        return bool(out.strip())
+    except Exception:
+        return False
+
+
+def start_ttyd_process(port):
+    """Jalankan ttyd baru di port tertentu. Return pid atau None."""
+    try:
+        proc = subprocess.Popen(
+            ["ttyd", "-p", str(port), "-W", "-t", "titleFixed=Termux Shell", "bash"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=os.setsid,
+        )
+        return proc.pid
+    except FileNotFoundError:
+        return None
+
+
+def restore_sessions():
+    """Dipanggil saat server start. Restore session dari state file."""
+    data = load_state()
+    SESSION_COUNTER[0] = int(data.get("counter", 0))
+    sessions = data.get("sessions", {})
+    if not sessions:
+        return
+
+    print(f"[restore] menemukan {len(sessions)} sesi di state file")
+
+    if shutil.which("ttyd") is None:
+        print("[restore] ttyd tidak terinstall, skip")
+        return
+
+    for sid, info in sessions.items():
+        port = int(info.get("port"))
+        pid = int(info.get("pid", 0))
+        label = info.get("label", sid)
+
+        # Cek apakah ttyd sebelumnya masih hidup
+        alive = pid and is_pid_alive(pid)
+        if alive:
+            SESSIONS[sid] = {"port": port, "pid": pid, "label": label, "created": time.time()}
+            print(f"[restore] {sid} masih hidup (pid={pid}, port={port})")
+            continue
+
+        # Kalau mati tapi port masih dipakai proses lain (ttyd orphan), coba pakai
+        # Kalau tidak, spawn baru di port yang sama
+        new_pid = start_ttyd_process(port)
+        if new_pid:
+            SESSIONS[sid] = {"port": port, "pid": new_pid, "label": label, "created": time.time()}
+            print(f"[restore] {sid} di-restart (pid={new_pid}, port={port})")
+        else:
+            print(f"[restore] {sid} gagal restart di port {port}")
+
+    save_state()
 
 
 def port_in_use(port):
@@ -1140,20 +1226,16 @@ def spawn_ttyd():
     if len(SESSIONS) >= TTYD_MAX_SESSIONS:
         return None
     port = alloc_port()
-    try:
-        proc = subprocess.Popen(
-            ["ttyd", "-p", str(port), "-W", "-t", "titleFixed=Termux Shell", "bash"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            preexec_fn=os.setsid,
-        )
-    except FileNotFoundError:
+    pid = start_ttyd_process(port)
+    if pid is None:
         return None
     time.sleep(0.6)
     SESSION_COUNTER[0] += 1
     sid = f"s{SESSION_COUNTER[0]}"
-    SESSIONS[sid] = {"port": port, "pid": proc.pid, "created": time.time()}
-    return {"id": sid, "port": port}
+    label = f"Terminal {len(SESSIONS) + 1}"
+    SESSIONS[sid] = {"port": port, "pid": pid, "label": label, "created": time.time()}
+    save_state()
+    return {"id": sid, "port": port, "label": label}
 
 
 def kill_ttyd(sid):
@@ -1167,18 +1249,25 @@ def kill_ttyd(sid):
             os.kill(s["pid"], signal.SIGTERM)
         except Exception:
             pass
+    save_state()
     return True
 
 
 def cleanup_dead_sessions():
     dead = []
     for sid, s in SESSIONS.items():
-        try:
-            os.kill(s["pid"], 0)
-        except OSError:
+        if not is_pid_alive(s["pid"]):
             dead.append(sid)
     for sid in dead:
         SESSIONS.pop(sid, None)
+    if dead:
+        save_state()
+
+
+def is_safe_path(base, path):
+    base = os.path.abspath(base)
+    target = os.path.abspath(os.path.join(base, path))
+    return target.startswith(base)
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -1262,7 +1351,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._json(200, {
                 "ok": True,
                 "available": shutil.which("ttyd") is not None,
-                "sessions": [{"id": k, "port": v["port"]} for k, v in SESSIONS.items()],
+                "sessions": [
+                    {"id": k, "port": v["port"], "label": v.get("label", k)}
+                    for k, v in SESSIONS.items()
+                ],
                 "max": TTYD_MAX_SESSIONS,
             })
             return
@@ -1344,11 +1436,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self._json(500, {"ok": False, "error": str(e)})
             return
 
+        if path == "/api/terminal/kill-all":
+            n = len(SESSIONS)
+            for sid in list(SESSIONS.keys()):
+                kill_ttyd(sid)
+            self._json(200, {"ok": True, "killed": n})
+            return
+
         self._json(404, {"ok": False, "error": "Not found"})
 
     def log_message(self, fmt, *args):
         pass
 
+
+# ========================================================
+# STARTUP
+# ========================================================
+restore_sessions()
 
 socketserver.TCPServer.allow_reuse_address = True
 with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:
@@ -1368,9 +1472,10 @@ if [ -z "$IP" ]; then
 fi
 
 # =========================================================
-# Bersihkan ttyd lama (jika ada)
+# JANGAN kill ttyd yang lama! Biarkan session tetap hidup.
+# (Hanya kill server.py lama kalau ada)
 # =========================================================
-pkill -f "ttyd -p " 2>/dev/null || true
+pkill -f "python.*server.py" 2>/dev/null || true
 sleep 1
 
 echo
@@ -1378,8 +1483,9 @@ echo "================================"
 echo "         SERVER SIAP"
 echo "================================"
 echo "Folder server    : $SERVER_DIR"
+echo "State file       : $STATE_FILE"
 echo "Port web         : $PORT"
-echo "Port ttyd (base) : $TTYD_BASE_PORT (multi-sesi, max $TTYD_MAX_SESSIONS)"
+echo "Port ttyd (base) : $TTYD_BASE_PORT (max $TTYD_MAX_SESSIONS)"
 echo "Token akses      : $AUTH_TOKEN"
 echo "IP lokal         : ${IP:-Tidak terdeteksi}"
 echo
@@ -1388,10 +1494,14 @@ echo "  Dashboard : http://${IP:-IP-HP-SERVER}:$PORT"
 echo "  File      : http://${IP:-IP-HP-SERVER}:$PORT/files.html"
 echo "  Terminal  : http://${IP:-IP-HP-SERVER}:$PORT/terminal.html"
 echo
-echo "Multi-tab terminal: klik '+ Sesi Baru' untuk buka shell tambahan."
+echo "Session terminal PERSISTEN: restart server pun tidak hilang."
+echo "Hapus file $STATE_FILE untuk reset semua session."
+echo
 echo "Tekan CTRL+C untuk menghentikan server."
+echo "  (ttyd TIDAK akan di-kill, session tetap hidup untuk nanti)"
 echo
 
 cd "$SERVER_DIR"
-trap 'pkill -f "ttyd -p " 2>/dev/null || true; exit 0' INT TERM
+# Trap hanya kill server.py, biarkan ttyd hidup
+trap 'pkill -f "python.*server.py" 2>/dev/null || true; exit 0' INT TERM
 exec python server.py
