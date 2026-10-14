@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # =========================================================
-#   ANDROID HOME SERVER - All in One (AVENOX THEME)
+#   ANDROID HOME SERVER - All in One (AVENOX THEME v2)
 #   Dashboard + File Manager + Web Terminal (ttyd)
 # =========================================================
 
@@ -29,14 +29,8 @@ mkdir -p "$SERVER_DIR"
 # =========================================================
 cat > "$SERVER_DIR/info.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
-# Output JSON: CPU, RAM, Disk, Network
-
-# =========================================================
-# CPU USAGE (multi-strategi)
-# =========================================================
 CPU_PCT="0.0"
 
-# --- Strategi 1: /proc/stat ---
 if [ -r /proc/stat ]; then
   read_cpu_stat() {
     awk '/^cpu / {
@@ -49,7 +43,6 @@ if [ -r /proc/stat ]; then
   CPU1=$(read_cpu_stat)
   sleep 0.5
   CPU2=$(read_cpu_stat)
-
   if [ -n "$CPU1" ] && [ -n "$CPU2" ]; then
     T1=$(echo "$CPU1" | awk '{print $1}')
     I1=$(echo "$CPU1" | awk '{print $2}')
@@ -62,7 +55,6 @@ if [ -r /proc/stat ]; then
   fi
 fi
 
-# --- Strategi 2: top -bn1 ---
 if [ "$CPU_PCT" = "0.0" ]; then
   TOP_OUT=$(top -bn1 2>/dev/null | head -20)
   IDLE=$(echo "$TOP_OUT" | awk '
@@ -77,7 +69,6 @@ if [ "$CPU_PCT" = "0.0" ]; then
   fi
 fi
 
-# --- Strategi 3: loadavg ---
 if [ "$CPU_PCT" = "0.0" ]; then
   LA=$(awk '{print $1}' /proc/loadavg 2>/dev/null)
   CORES=$(nproc 2>/dev/null || echo 1)
@@ -86,9 +77,6 @@ if [ "$CPU_PCT" = "0.0" ]; then
   fi
 fi
 
-# =========================================================
-# INFO PROCESSOR
-# =========================================================
 CPU_MODEL=$(awk -F: '/^[Hh]ardware/ {gsub(/^ +/,"",$2); print $2; exit}' /proc/cpuinfo 2>/dev/null)
 [ -z "$CPU_MODEL" ] && CPU_MODEL=$(awk -F: '/^[Mm]odel name/ {gsub(/^ +/,"",$2); print $2; exit}' /proc/cpuinfo 2>/dev/null)
 [ -z "$CPU_MODEL" ] && CPU_MODEL=$(getprop ro.soc.model 2>/dev/null)
@@ -104,9 +92,6 @@ CPU_FREQ_MAX=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/
 [ "$CPU_FREQ" -gt 0 ] 2>/dev/null && CPU_FREQ_MHZ=$((CPU_FREQ/1000)) || CPU_FREQ_MHZ=0
 [ "$CPU_FREQ_MAX" -gt 0 ] 2>/dev/null && CPU_FREQ_MAX_MHZ=$((CPU_FREQ_MAX/1000)) || CPU_FREQ_MAX_MHZ=0
 
-# =========================================================
-# RAM
-# =========================================================
 RAM_TOTAL=$(awk '/MemTotal/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
 RAM_AVAIL=$(awk '/MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
 [ -z "$RAM_AVAIL" ] || [ "$RAM_AVAIL" = "0" ] && RAM_AVAIL=$(awk '/MemFree/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
@@ -118,9 +103,6 @@ else
   RAM_PCT="0.0"
 fi
 
-# =========================================================
-# DISK
-# =========================================================
 DISK_INFO=$(df -k "$HOME" | awk 'NR==2 {print $2, $3, $4}')
 DISK_TOTAL=$(echo "$DISK_INFO" | awk '{printf "%.1f", $1/1024/1024}')
 DISK_USED=$(echo "$DISK_INFO"  | awk '{printf "%.1f", $2/1024/1024}')
@@ -131,9 +113,6 @@ else
   DISK_PCT="0.0"
 fi
 
-# =========================================================
-# NETWORK
-# =========================================================
 IFACE=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
 [ -z "$IFACE" ] && IFACE="wlan0"
 
@@ -146,9 +125,6 @@ TX2=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
 RX_MBPS=$(awk "BEGIN {printf \"%.2f\", (($RX2-$RX1)*8)/500000}")
 TX_MBPS=$(awk "BEGIN {printf \"%.2f\", (($TX2-$TX1)*8)/500000}")
 
-# =========================================================
-# JSON
-# =========================================================
 cat <<JSON
 {
   "cpu": {
@@ -168,7 +144,7 @@ SH
 chmod +x "$SERVER_DIR/info.sh"
 
 # =========================================================
-# index.html — Dashboard (AVENOX THEME)
+# index.html — Dashboard (AVENOX THEME v2 - Topbar)
 # =========================================================
 cat > "$SERVER_DIR/index.html" <<'HTML'
 <!DOCTYPE html>
@@ -176,7 +152,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Home Server · Dashboard</title>
+  <title>Dashboard · Home Server</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
@@ -185,61 +161,115 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       --text: #f5f5f5; --muted: #8a8a8a;
       --accent: #00e0c6; --accent-2: #00b3a0;
       --green: #00e0c6; --amber: #ffb020; --red: #ff4d4d;
-      --blue: #4db8ff; --purple: #a78bfa;
+      --blue: #4db8ff;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: radial-gradient(circle at 50% 0%, #0a0a0a 0%, #000 70%);
-      color: var(--text); min-height: 100vh; padding: 24px 16px;
+      color: var(--text); min-height: 100vh; padding: 0;
     }
-    .wrap { max-width: 760px; margin: 0 auto; }
-    header { text-align: center; margin-bottom: 28px; }
 
-    .logo {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 64px; height: 64px; border-radius: 16px;
-      background: #0d0d0d;
-      border: 1px solid var(--accent);
-      box-shadow: 0 0 24px rgba(0,224,198,.25), inset 0 0 20px rgba(0,224,198,.08);
-      font-size: 26px; color: var(--accent); margin-bottom: 14px;
+    /* ============ TOPBAR ============ */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
     }
-    h1 {
-      font-size: 22px; font-weight: 700; letter-spacing: .5px;
-      text-transform: uppercase;
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
       color: var(--text);
     }
-    h1 span { color: var(--accent); }
-    .sub {
-      font-size: 12px; color: var(--muted); margin-top: 8px;
-      display: inline-flex; align-items: center; gap: 8px;
-      letter-spacing: 1.5px; text-transform: uppercase;
+    .brand i {
+      color: var(--accent); font-size: 14px;
+      filter: drop-shadow(0 0 6px rgba(0,224,198,.6));
     }
-    .dot {
-      width: 7px; height: 7px; border-radius: 50%;
+    .brand span { color: var(--accent); }
+
+    .menu-btn {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: #0d0d0d; border: 1px solid var(--border);
+      color: var(--accent); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: .2s;
+    }
+    .menu-btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(0,224,198,.25);
+    }
+
+    /* ============ DROPDOWN MENU ============ */
+    .menu-wrap { position: relative; }
+    .dropdown {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      min-width: 180px;
+      background: #0d0d0d;
+      border: 1px solid var(--border);
+      border-radius: 12px; padding: 6px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(0,224,198,.05);
+      opacity: 0; transform: translateY(-8px) scale(.97);
+      pointer-events: none; transition: .18s ease;
+      transform-origin: top right;
+    }
+    .dropdown.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+    .dropdown a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      color: var(--text); text-decoration: none;
+      font-size: 13px; letter-spacing: .5px;
+      transition: .15s;
+    }
+    .dropdown a i { color: var(--accent); width: 16px; text-align: center; font-size: 13px; }
+    .dropdown a:hover { background: rgba(0,224,198,.08); color: var(--accent); }
+    .dropdown a.active { background: rgba(0,224,198,.1); color: var(--accent); }
+    .dropdown .divider { height: 1px; background: var(--border); margin: 5px 4px; }
+
+    /* ============ LAYOUT ============ */
+    .wrap {
+      max-width: 900px; margin: 0 auto;
+      padding: 22px 16px 40px;
+    }
+
+    .page-title {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .page-title h2 {
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .page-title .line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+    .page-title .live {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--accent);
+      padding: 4px 10px; border-radius: 6px;
+      background: rgba(0,224,198,.06);
+      border: 1px solid rgba(0,224,198,.22);
+    }
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
       background: var(--accent);
-      box-shadow: 0 0 10px var(--accent);
+      box-shadow: 0 0 8px var(--accent);
       animation: pulse 1.6s infinite;
     }
     @keyframes pulse {
       0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .4; transform: scale(.8); }
+      50% { opacity: .4; transform: scale(.7); }
     }
-
-    .nav { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
-    .nav a {
-      color: var(--muted); text-decoration: none; font-size: 12px;
-      padding: 8px 14px; border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      letter-spacing: .5px; text-transform: uppercase;
-      transition: .2s;
-    }
-    .nav a:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px rgba(0,224,198,.2); }
-    .nav a.active { color: var(--accent); border-color: var(--accent); background: rgba(0,224,198,.06); }
 
     .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-    @media (min-width: 620px) {
+    @media (min-width: 700px) {
       .grid { grid-template-columns: 1fr 1fr; }
       .card.full { grid-column: 1 / -1; }
     }
@@ -248,26 +278,24 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);
       border: 1px solid var(--border); border-radius: 14px;
       padding: 18px; position: relative; overflow: hidden;
+      transition: border-color .2s;
     }
+    .card:hover { border-color: #2a2a2a; }
     .card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: .6;
+      opacity: .5;
     }
 
-    .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-    .card-head i.ic {
+    .card-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .card-head .ic {
       width: 34px; height: 34px;
       display: inline-flex; align-items: center; justify-content: center;
       border-radius: 9px; font-size: 14px;
-      background: #0a0a0a; border: 1px solid var(--border);
-      color: var(--accent);
-      flex-shrink: 0;
-    }
-    .ic-cpu, .ic-ram, .ic-disk, .ic-net {
-      background: #0a0a0a !important;
-      color: var(--accent) !important;
-      border: 1px solid var(--border);
+      background: #080808; border: 1px solid var(--border);
+      color: var(--accent); flex-shrink: 0;
     }
     .card-head h2 {
       font-size: 12px; font-weight: 600;
@@ -286,11 +314,13 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       display: flex; align-items: center; gap: 10px;
       padding: 10px 12px; background: #080808;
       border: 1px solid var(--border); border-radius: 9px;
-      margin-bottom: 12px; font-size: 13px;
+      margin-bottom: 14px; font-size: 13px;
     }
-    .chip i { color: var(--accent); }
-    .chip .model { font-weight: 600; color: #ededed;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chip i { color: var(--accent); font-size: 12px; }
+    .chip .model {
+      font-weight: 600; color: #ededed;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .chip .arch {
       margin-left: auto; font-size: 10px; color: var(--muted);
       background: #0f0f0f; padding: 3px 8px; border-radius: 5px;
@@ -298,15 +328,23 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       letter-spacing: 1px; text-transform: uppercase;
     }
 
-    .row { display: flex; justify-content: space-between; align-items: center;
-      font-size: 13px; margin: 8px 0; }
-    .row .lbl { color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
-    .row .lbl i { color: var(--accent); opacity: .8; font-size: 11px; }
-    .row .val { font-weight: 600; color: #ededed; font-variant-numeric: tabular-nums; }
+    .row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; margin: 9px 0;
+    }
+    .row .lbl {
+      color: var(--muted);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .row .lbl i { color: var(--accent); opacity: .8; font-size: 11px; width: 14px; }
+    .row .val {
+      font-weight: 600; color: #ededed;
+      font-variant-numeric: tabular-nums;
+    }
 
     .bar {
       height: 6px; border-radius: 4px;
-      background: #080808; overflow: hidden; margin-top: 14px;
+      background: #080808; overflow: hidden; margin-top: 16px;
       border: 1px solid var(--border);
     }
     .fill {
@@ -318,21 +356,25 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     .fill.warn { background: linear-gradient(90deg,#cc8c1a,#ffb020); box-shadow: 0 0 12px rgba(255,176,32,.5); }
     .fill.crit { background: linear-gradient(90deg,#cc3d3d,#ff4d4d); box-shadow: 0 0 12px rgba(255,77,77,.5); }
 
-    .big-pct { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+    .big-pct {
+      font-size: 26px; font-weight: 700;
+      font-variant-numeric: tabular-nums; letter-spacing: -.5px;
+    }
     .pct-green { color: var(--accent); }
     .pct-amber { color: var(--amber); }
     .pct-red   { color: var(--red); }
 
-    .net-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .net-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .net-box {
       background: #080808; border: 1px solid var(--border);
-      border-radius: 11px; padding: 16px 10px; text-align: center;
+      border-radius: 11px; padding: 18px 12px; text-align: center;
+      transition: border-color .2s;
     }
-    .net-box i { font-size: 15px; margin-bottom: 8px; display: block; color: var(--accent); }
+    .net-box:hover { border-color: #2a2a2a; }
+    .net-box i { font-size: 15px; margin-bottom: 8px; display: block; }
     .net-box .num {
-      font-size: 20px; font-weight: 700;
+      font-size: 22px; font-weight: 700;
       font-variant-numeric: tabular-nums; line-height: 1.2;
-      color: var(--accent);
     }
     .net-box .lbl {
       font-size: 10px; color: var(--muted); margin-top: 6px;
@@ -343,29 +385,48 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
 
     footer {
       text-align: center; font-size: 11px; color: var(--muted);
-      margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border);
+      margin-top: 28px; padding-top: 18px;
+      border-top: 1px solid var(--border);
       letter-spacing: 1px; text-transform: uppercase;
     }
     footer i { color: var(--accent); }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="logo"><i class="fa-solid fa-server"></i></div>
-      <h1>Home <span>Server</span></h1>
-      <div class="sub"><span class="dot"></span>Live monitoring · Android</div>
-      <div class="nav">
+
+  <!-- ============ TOPBAR ============ -->
+  <div class="topbar">
+    <div class="brand">
+      <i class="fa-solid fa-server"></i>
+      Home<span>Server</span>
+    </div>
+    <div class="menu-wrap">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="dropdown" id="dropdown">
         <a href="/" class="active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
         <a href="/files.html"><i class="fa-solid fa-folder"></i> Files</a>
         <a href="/terminal.html"><i class="fa-solid fa-terminal"></i> Terminal</a>
+        <div class="divider"></div>
+        <a href="#" onclick="location.reload();return false;"><i class="fa-solid fa-rotate"></i> Refresh</a>
       </div>
-    </header>
+    </div>
+  </div>
+
+  <!-- ============ CONTENT ============ -->
+  <div class="wrap">
+    <div class="page-title">
+      <h2>System Overview</h2>
+      <div class="line"></div>
+      <div class="live"><span class="live-dot"></span> Live</div>
+    </div>
 
     <div class="grid">
+      <!-- CPU -->
       <div class="card full">
         <div class="card-head">
-          <i class="ic ic-cpu fa-solid fa-microchip"></i>
+          <i class="ic fa-solid fa-microchip"></i>
           <h2>CPU</h2>
           <span class="badge" id="cpu-cores">- core</span>
         </div>
@@ -385,9 +446,10 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
         <div class="bar"><div class="fill" id="cpu-bar"></div></div>
       </div>
 
+      <!-- RAM -->
       <div class="card">
         <div class="card-head">
-          <i class="ic ic-ram fa-solid fa-memory"></i>
+          <i class="ic fa-solid fa-memory"></i>
           <h2>RAM</h2>
         </div>
         <div class="row"><span class="lbl"><i class="fa-solid fa-chart-pie"></i> Pemakaian</span><span class="val" id="ram-pct">-</span></div>
@@ -397,9 +459,10 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
         <div class="bar"><div class="fill" id="ram-bar"></div></div>
       </div>
 
+      <!-- DISK -->
       <div class="card">
         <div class="card-head">
-          <i class="ic ic-disk fa-solid fa-hard-drive"></i>
+          <i class="ic fa-solid fa-hard-drive"></i>
           <h2>Disk</h2>
         </div>
         <div class="row"><span class="lbl"><i class="fa-solid fa-chart-pie"></i> Pemakaian</span><span class="val" id="disk-pct">-</span></div>
@@ -409,9 +472,10 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
         <div class="bar"><div class="fill" id="disk-bar"></div></div>
       </div>
 
+      <!-- NETWORK -->
       <div class="card full">
         <div class="card-head">
-          <i class="ic ic-net fa-solid fa-wifi"></i>
+          <i class="ic fa-solid fa-wifi"></i>
           <h2>Jaringan</h2>
           <span class="badge" id="iface">-</span>
         </div>
@@ -437,6 +501,23 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
   </div>
 
 <script>
+// ===== Dropdown menu =====
+const menuBtn = document.getElementById('menuBtn');
+const dropdown = document.getElementById('dropdown');
+menuBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  dropdown.classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!dropdown.contains(e.target) && e.target !== menuBtn) {
+    dropdown.classList.remove('open');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') dropdown.classList.remove('open');
+});
+
+// ===== Dashboard refresh =====
 function setBar(id, pct) {
   const el = document.getElementById(id);
   el.style.width = Math.min(pct, 100) + '%';
@@ -488,7 +569,7 @@ setInterval(refresh, 2000);
 HTML
 
 # =========================================================
-# files.html — File Manager (AVENOX THEME)
+# files.html — File Manager (AVENOX THEME v2 - Topbar)
 # =========================================================
 cat > "$SERVER_DIR/files.html" <<'HTML'
 <!DOCTYPE html>
@@ -496,25 +577,36 @@ cat > "$SERVER_DIR/files.html" <<'HTML'
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>File Manager · Home Server</title>
+<title>Files · Home Server</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
   :root{--bg:#000;--card:#0d0d0d;--card-2:#111;--border:#1f1f1f;--text:#f5f5f5;--muted:#8a8a8a;--accent:#00e0c6;--accent-2:#00b3a0;--green:#00e0c6;--red:#ff4d4d;--amber:#ffb020;--blue:#4db8ff;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh;padding:20px 14px}
-  .wrap{max-width:820px;margin:0 auto}
-  header{text-align:center;margin-bottom:20px}
-  h1{font-size:18px;text-transform:uppercase;letter-spacing:1px;color:var(--text)}
-  h1 i{color:var(--accent)}
-  .sub{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
-  .nav{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
-  .nav a{color:var(--muted);text-decoration:none;font-size:11px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);letter-spacing:.8px;text-transform:uppercase;transition:.2s}
-  .nav a:hover,.nav a.active{color:var(--accent);border-color:var(--accent);background:rgba(0,224,198,.05);box-shadow:0 0 12px rgba(0,224,198,.18)}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text)}
+  .brand i{color:var(--accent);font-size:14px;filter:drop-shadow(0 0 6px rgba(0,224,198,.6))}
+  .brand span{color:var(--accent)}
+  .menu-btn{width:40px;height:40px;border-radius:10px;background:#0d0d0d;border:1px solid var(--border);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s}
+  .menu-btn:hover{border-color:var(--accent);box-shadow:0 0 12px rgba(0,224,198,.25)}
+  .menu-wrap{position:relative}
+  .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:180px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);opacity:0;transform:translateY(-8px) scale(.97);pointer-events:none;transition:.18s ease;transform-origin:top right}
+  .dropdown.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .dropdown a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text);text-decoration:none;font-size:13px;letter-spacing:.5px;transition:.15s}
+  .dropdown a i{color:var(--accent);width:16px;text-align:center;font-size:13px}
+  .dropdown a:hover{background:rgba(0,224,198,.08);color:var(--accent)}
+  .dropdown a.active{background:rgba(0,224,198,.1);color:var(--accent)}
+  .dropdown .divider{height:1px;background:var(--border);margin:5px 4px}
+
+  .wrap{max-width:820px;margin:0 auto;padding:22px 16px 40px}
+  .page-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .page-title h2{font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
+  .page-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
   .btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s;letter-spacing:.5px}
   .btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(0,224,198,.15)}
-  .btn.primary{background:linear-gradient(135deg,var(--accent-2),var(--accent));border:none;color:#000;font-weight:600}
   .btn.danger{border-color:var(--red);color:var(--red)}
   .btn.danger:hover{background:rgba(255,77,77,.08);box-shadow:0 0 10px rgba(255,77,77,.2)}
 
@@ -552,45 +644,71 @@ cat > "$SERVER_DIR/files.html" <<'HTML'
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1><i class="fa-solid fa-folder-tree"></i> File Manager</h1>
-    <div class="sub">Upload · Download · Hapus</div>
-    <div class="nav">
-      <a href="/"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-      <a href="/files.html" class="active"><i class="fa-solid fa-folder"></i> Files</a>
-      <a href="/terminal.html"><i class="fa-solid fa-terminal"></i> Terminal</a>
+
+  <div class="topbar">
+    <div class="brand">
+      <i class="fa-solid fa-server"></i>
+      Home<span>Server</span>
     </div>
-  </header>
-
-  <div class="token-bar">
-    <input type="password" id="token" placeholder="Token akses (X-Auth-Token)">
-    <button class="btn" onclick="saveToken()"><i class="fa-solid fa-key"></i></button>
+    <div class="menu-wrap">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="dropdown" id="dropdown">
+        <a href="/"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="/files.html" class="active"><i class="fa-solid fa-folder"></i> Files</a>
+        <a href="/terminal.html"><i class="fa-solid fa-terminal"></i> Terminal</a>
+        <div class="divider"></div>
+        <a href="#" onclick="location.reload();return false;"><i class="fa-solid fa-rotate"></i> Refresh</a>
+      </div>
+    </div>
   </div>
 
-  <div class="toolbar">
-    <input class="path" id="path" value="" placeholder="Path relatif dari HOME">
-    <button class="btn" onclick="go()"><i class="fa-solid fa-arrow-right"></i></button>
-    <button class="btn" onclick="goUp()"><i class="fa-solid fa-arrow-up"></i></button>
-    <button class="btn" onclick="refresh()"><i class="fa-solid fa-rotate"></i></button>
-  </div>
+  <div class="wrap">
+    <div class="page-title">
+      <h2>File Manager</h2>
+      <div class="line"></div>
+    </div>
 
-  <div class="drop" id="drop">
-    <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px"></i>
-    <div style="margin-top:8px">Tarik & lepas file di sini, atau <label for="fileInput" style="color:var(--accent);cursor:pointer;text-decoration:underline">pilih file</label></div>
-    <input type="file" id="fileInput" multiple style="display:none">
-  </div>
+    <div class="token-bar">
+      <input type="password" id="token" placeholder="Token akses (X-Auth-Token)">
+      <button class="btn" onclick="saveToken()"><i class="fa-solid fa-key"></i></button>
+    </div>
 
-  <div class="card" id="list">
-    <div class="empty">Memuat…</div>
+    <div class="toolbar">
+      <input class="path" id="path" value="" placeholder="Path relatif dari HOME">
+      <button class="btn" onclick="go()"><i class="fa-solid fa-arrow-right"></i></button>
+      <button class="btn" onclick="goUp()"><i class="fa-solid fa-arrow-up"></i></button>
+      <button class="btn" onclick="refresh()"><i class="fa-solid fa-rotate"></i></button>
+    </div>
+
+    <div class="drop" id="drop">
+      <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px"></i>
+      <div style="margin-top:8px">Tarik & lepas file di sini, atau <label for="fileInput" style="color:var(--accent);cursor:pointer;text-decoration:underline">pilih file</label></div>
+      <input type="file" id="fileInput" multiple style="display:none">
+    </div>
+
+    <div class="card" id="list">
+      <div class="empty">Memuat…</div>
+    </div>
   </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 const $ = id => document.getElementById(id);
 let currentPath = "";
+
+// Dropdown
+const menuBtn = document.getElementById('menuBtn');
+const dropdown = document.getElementById('dropdown');
+menuBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  dropdown.classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!dropdown.contains(e.target) && e.target !== menuBtn) dropdown.classList.remove('open');
+});
 
 function saveToken(){
   localStorage.setItem("hs_token", $("token").value);
@@ -713,7 +831,7 @@ refresh();
 HTML
 
 # =========================================================
-# terminal.html — Web Terminal (AVENOX THEME)
+# terminal.html — Web Terminal (AVENOX THEME v2 - Topbar)
 # =========================================================
 cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <!DOCTYPE html>
@@ -726,15 +844,27 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <style>
   :root{--bg:#000;--card:#0d0d0d;--border:#1f1f1f;--text:#f5f5f5;--muted:#8a8a8a;--accent:#00e0c6;--green:#00e0c6;--red:#ff4d4d;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh;padding:20px 14px;display:flex;flex-direction:column}
-  .wrap{max-width:1100px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column}
-  header{text-align:center;margin-bottom:16px}
-  h1{font-size:18px;text-transform:uppercase;letter-spacing:1px}
-  h1 i{color:var(--accent)}
-  .sub{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:1.5px;text-transform:uppercase}
-  .nav{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
-  .nav a{color:var(--muted);text-decoration:none;font-size:11px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);letter-spacing:.8px;text-transform:uppercase;transition:.2s}
-  .nav a:hover,.nav a.active{color:var(--accent);border-color:var(--accent);background:rgba(0,224,198,.05);box-shadow:0 0 12px rgba(0,224,198,.18)}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text)}
+  .brand i{color:var(--accent);font-size:14px;filter:drop-shadow(0 0 6px rgba(0,224,198,.6))}
+  .brand span{color:var(--accent)}
+  .menu-btn{width:40px;height:40px;border-radius:10px;background:#0d0d0d;border:1px solid var(--border);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s}
+  .menu-btn:hover{border-color:var(--accent);box-shadow:0 0 12px rgba(0,224,198,.25)}
+  .menu-wrap{position:relative}
+  .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:180px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);opacity:0;transform:translateY(-8px) scale(.97);pointer-events:none;transition:.18s ease;transform-origin:top right}
+  .dropdown.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .dropdown a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text);text-decoration:none;font-size:13px;letter-spacing:.5px;transition:.15s}
+  .dropdown a i{color:var(--accent);width:16px;text-align:center;font-size:13px}
+  .dropdown a:hover{background:rgba(0,224,198,.08);color:var(--accent)}
+  .dropdown a.active{background:rgba(0,224,198,.1);color:var(--accent)}
+  .dropdown .divider{height:1px;background:var(--border);margin:5px 4px}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 40px;width:100%;flex:1;display:flex;flex-direction:column}
+  .page-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .page-title h2{font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
+  .page-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 
   .term-wrap{flex:1;background:#000;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:70vh;position:relative;box-shadow:0 0 24px rgba(0,224,198,.08)}
   iframe{width:100%;height:100%;border:none;display:block;min-height:70vh}
@@ -749,28 +879,54 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1><i class="fa-solid fa-terminal"></i> Web Terminal</h1>
-    <div class="sub">Akses shell penuh via ttyd</div>
-    <div class="nav">
-      <a href="/"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-      <a href="/files.html"><i class="fa-solid fa-folder"></i> Files</a>
-      <a href="/terminal.html" class="active"><i class="fa-solid fa-terminal"></i> Terminal</a>
+
+  <div class="topbar">
+    <div class="brand">
+      <i class="fa-solid fa-server"></i>
+      Home<span>Server</span>
     </div>
-  </header>
-
-  <div class="notice" id="notice">
-    <div><i class="fa-solid fa-circle-info"></i> Status: <span id="statusText">Memeriksa…</span> <span class="status"><span class="dot" id="dot"></span></span></div>
-    <div style="margin-top:8px" id="hint"></div>
+    <div class="menu-wrap">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="dropdown" id="dropdown">
+        <a href="/"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="/files.html"><i class="fa-solid fa-folder"></i> Files</a>
+        <a href="/terminal.html" class="active"><i class="fa-solid fa-terminal"></i> Terminal</a>
+        <div class="divider"></div>
+        <a href="#" onclick="location.reload();return false;"><i class="fa-solid fa-rotate"></i> Refresh</a>
+      </div>
+    </div>
   </div>
 
-  <div class="term-wrap" id="termWrap" style="display:none">
-    <iframe id="termFrame" src="about:blank"></iframe>
+  <div class="wrap">
+    <div class="page-title">
+      <h2>Web Terminal</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="notice" id="notice">
+      <div><i class="fa-solid fa-circle-info"></i> Status: <span id="statusText">Memeriksa…</span> <span class="status"><span class="dot" id="dot"></span></span></div>
+      <div style="margin-top:8px" id="hint"></div>
+    </div>
+
+    <div class="term-wrap" id="termWrap" style="display:none">
+      <iframe id="termFrame" src="about:blank"></iframe>
+    </div>
   </div>
-</div>
 
 <script>
+// Dropdown
+const menuBtn = document.getElementById('menuBtn');
+const dropdown = document.getElementById('dropdown');
+menuBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  dropdown.classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!dropdown.contains(e.target) && e.target !== menuBtn) dropdown.classList.remove('open');
+});
+
 async function check(){
   try{
     const r = await fetch("/api/terminal-status");
@@ -822,15 +978,11 @@ import urllib.parse
 PORT = $PORT
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
-# ========================
-# KONFIGURASI KEAMANAN
-# ========================
 AUTH_TOKEN = os.environ.get("HOME_SERVER_TOKEN", "$AUTH_TOKEN")
 ALLOWED_ROOT = os.path.expanduser("~")
 
 
 def is_safe_path(base, path):
-    """Pastikan path tidak keluar dari base directory."""
     base = os.path.abspath(base)
     target = os.path.abspath(os.path.join(base, path))
     return target.startswith(base)
@@ -840,7 +992,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
-    # ---------- Helper ----------
     def _json(self, code, obj):
         body = json.dumps(obj).encode()
         self.send_response(code)
@@ -870,7 +1021,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except Exception:
             return 0
 
-    # ---------- GET ----------
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
 
@@ -932,7 +1082,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         super().do_GET()
 
-    # ---------- POST ----------
     def do_POST(self):
         path = urllib.parse.urlparse(self.path).path
 
@@ -1017,7 +1166,7 @@ if [ -z "$IP" ]; then
 fi
 
 # =========================================================
-# Jalankan ttyd (Web Terminal full access)
+# Jalankan ttyd
 # =========================================================
 if command -v ttyd >/dev/null 2>&1; then
   pkill -f "ttyd -p $TTYD_PORT" 2>/dev/null || true
@@ -1033,7 +1182,7 @@ echo
 echo "================================"
 echo "         SERVER SIAP"
 echo "================================"
-echo "Tema          : AVENOX (Black + Cyan Neon)"
+echo "Tema          : AVENOX v2 (Topbar + Dropdown)"
 echo "Folder server : $SERVER_DIR"
 echo "Port web      : $PORT"
 echo "Port terminal : $TTYD_PORT ($TTYD_STATUS)"
