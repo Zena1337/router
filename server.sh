@@ -1,13 +1,14 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # =========================================================
 #   ANDROID HOME SERVER - All in One (DARK MINIMAL THEME)
-#   Dashboard + File Manager + Web Terminal (ttyd)
+#   Dashboard + File Manager + Web Terminal (multi-sesi)
 # =========================================================
 
 set -e
 
 PORT=8080
-TTYD_PORT=7681
+TTYD_BASE_PORT=7681
+TTYD_MAX_SESSIONS=6
 SERVER_DIR="$HOME/home-server"
 AUTH_TOKEN="${HOME_SERVER_TOKEN:-rahasia123}"
 
@@ -21,7 +22,7 @@ pkg install -y python openssh iproute2 procps ttyd
 mkdir -p "$SERVER_DIR"
 
 # =========================================================
-# info.sh — Output JSON
+# info.sh
 # =========================================================
 cat > "$SERVER_DIR/info.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
@@ -175,7 +176,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ============ TOPBAR ============ */
     .topbar {
       position: sticky; top: 0; z-index: 50;
       display: flex; align-items: center; justify-content: space-between;
@@ -189,9 +189,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       letter-spacing: 1.5px;
       color: var(--text);
     }
-    .brand i {
-      font-size: 22px; color: var(--text);
-    }
+    .brand i { font-size: 22px; color: var(--text); }
     .menu-btn {
       width: 44px; height: 44px;
       border-radius: 12px;
@@ -204,9 +202,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       transition: background .15s, border-color .15s;
     }
     .menu-btn:hover { background: #1a1a1a; border-color: #333; }
-    .menu-btn i { transition: transform .2s; }
 
-    /* ============ DROPDOWN MENU ============ */
     .menu-wrap { position: relative; }
     .dropdown {
       position: absolute; top: calc(100% + 10px); right: 0;
@@ -236,7 +232,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       font-size: 15px;
       font-weight: 500;
       transition: background .15s;
-      position: relative;
     }
     .dropdown a:hover { background: #1a1a1a; }
     .dropdown a.active { background: #1f1f1f; }
@@ -245,12 +240,8 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       text-align: center;
     }
     .dropdown a .label { flex: 1; }
-    .dropdown a .arrow {
-      color: var(--text-mute);
-      font-size: 14px;
-    }
+    .dropdown a .arrow { color: var(--text-mute); font-size: 14px; }
 
-    /* ============ LAYOUT ============ */
     .wrap {
       max-width: 900px; margin: 0 auto;
       padding: 24px 20px 60px;
@@ -272,7 +263,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       border-radius: 999px;
       background: #121212;
       border: 1px solid var(--border-2);
-      letter-spacing: .3px;
     }
     .dot {
       width: 6px; height: 6px; border-radius: 50%;
@@ -306,7 +296,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     .card-head h3 {
       font-size: 15px; font-weight: 600;
       color: var(--text);
-      letter-spacing: -.2px;
     }
     .card-head .badge {
       margin-left: auto;
@@ -316,7 +305,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       padding: 4px 10px;
       border-radius: 6px;
       white-space: nowrap;
-      letter-spacing: .3px;
     }
 
     .chip {
@@ -350,10 +338,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       color: var(--text-dim);
       display: inline-flex; align-items: center; gap: 10px;
     }
-    .row .lbl i {
-      color: var(--text-mute);
-      font-size: 12px; width: 14px;
-    }
+    .row .lbl i { color: var(--text-mute); font-size: 12px; width: 14px; }
     .row .val {
       font-weight: 600; color: var(--text);
       font-variant-numeric: tabular-nums;
@@ -405,7 +390,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     .net-box .lbl {
       font-size: 11px; color: var(--text-mute);
       margin-top: 8px;
-      letter-spacing: .3px;
     }
 
     footer {
@@ -418,30 +402,13 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
 <body>
 
   <div class="topbar">
-    <div class="brand">
-      <i class="fa-solid fa-cloud"></i>
-      HOME SERVER
-    </div>
+    <div class="brand"><i class="fa-solid fa-cloud"></i> HOME SERVER</div>
     <div class="menu-wrap">
-      <button class="menu-btn" id="menuBtn" aria-label="Menu">
-        <i class="fa-solid fa-xmark" id="menuIcon"></i>
-      </button>
+      <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fa-solid fa-xmark" id="menuIcon"></i></button>
       <div class="dropdown" id="dropdown">
-        <a href="/" class="active">
-          <i class="mi fa-solid fa-house"></i>
-          <span class="label">Home</span>
-          <i class="arrow fa-solid fa-chevron-right"></i>
-        </a>
-        <a href="/files.html">
-          <i class="mi fa-solid fa-server"></i>
-          <span class="label">File</span>
-          <i class="arrow fa-solid fa-chevron-right"></i>
-        </a>
-        <a href="/terminal.html">
-          <i class="mi fa-solid fa-receipt"></i>
-          <span class="label">Terminal</span>
-          <i class="arrow fa-solid fa-chevron-right"></i>
-        </a>
+        <a href="/" class="active"><i class="mi fa-solid fa-house"></i><span class="label">Home</span><i class="arrow fa-solid fa-chevron-right"></i></a>
+        <a href="/files.html"><i class="mi fa-solid fa-server"></i><span class="label">File</span><i class="arrow fa-solid fa-chevron-right"></i></a>
+        <a href="/terminal.html"><i class="mi fa-solid fa-receipt"></i><span class="label">Terminal</span><i class="arrow fa-solid fa-chevron-right"></i></a>
       </div>
     </div>
   </div>
@@ -527,14 +494,13 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
 const menuBtn = document.getElementById('menuBtn');
 const menuIcon = document.getElementById('menuIcon');
 const dropdown = document.getElementById('dropdown');
-
 menuBtn.addEventListener('click', e => {
   e.stopPropagation();
   const open = dropdown.classList.toggle('open');
   menuIcon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
 });
 document.addEventListener('click', e => {
-  if (!dropdown.contains(e.target) && e.target !== menuBtn && !menuBtn.contains(e.target)) {
+  if (!dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
     dropdown.classList.remove('open');
     menuIcon.className = 'fa-solid fa-bars';
   }
@@ -554,7 +520,6 @@ async function refresh() {
   try {
     const r = await fetch('/info.json?t=' + Date.now());
     const d = await r.json();
-
     document.getElementById('cpu-pct').textContent = d.cpu.pct + '%';
     colorPct('cpu-pct', d.cpu.pct);
     document.getElementById('cpu-cores').textContent = d.cpu.cores + ' core';
@@ -582,7 +547,6 @@ async function refresh() {
     document.getElementById('tx').textContent = d.net.tx.toFixed(2);
   } catch(e) { console.error(e); }
 }
-
 refresh();
 setInterval(refresh, 2000);
 </script>
@@ -815,7 +779,7 @@ refresh();
 HTML
 
 # =========================================================
-# terminal.html
+# terminal.html — Multi-tab / Multi-sesi
 # =========================================================
 cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <!DOCTYPE html>
@@ -828,7 +792,7 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <style>
   :root{--bg:#000;--surface:#0d0d0d;--surface-2:#121212;--border:#1c1c1c;--border-2:#262626;--text:#f0f0f0;--text-dim:#a0a0a0;--text-mute:#6a6a6a;--crit:#c86161;}
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{background:#000}
+  html,body{background:#000;height:100%}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#000;color:var(--text);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 
   .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:#000;border-bottom:1px solid var(--border)}
@@ -846,19 +810,41 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
   .dropdown a .label{flex:1}
   .dropdown a .arrow{color:var(--text-mute);font-size:14px}
 
-  .wrap{max-width:1100px;margin:0 auto;padding:24px 20px 60px;width:100%;flex:1;display:flex;flex-direction:column}
-  .page-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 20px 40px;width:100%;flex:1;display:flex;flex-direction:column;min-height:0}
+  .page-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
   .page-title h2{font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--text)}
 
-  .term-wrap{flex:1;background:#000;border:1px solid var(--border);border-radius:14px;overflow:hidden;min-height:70vh}
-  iframe{width:100%;height:100%;border:none;display:block;min-height:70vh}
+  .tabbar{display:flex;align-items:center;gap:6px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px 12px 0 0;padding:6px 8px;border-bottom:none;overflow-x:auto;scrollbar-width:none}
+  .tabbar::-webkit-scrollbar{display:none}
+  .tab{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;background:#141414;border:1px solid var(--border-2);color:var(--text-dim);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:.15s;user-select:none}
+  .tab:hover{background:#1a1a1a;color:var(--text)}
+  .tab.active{background:#1f1f1f;color:var(--text);border-color:#333}
+  .tab .close{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-mute);transition:.15s}
+  .tab .close:hover{background:var(--crit);color:#fff}
+  .tab-add{padding:9px 12px;border-radius:8px;background:transparent;border:1px dashed var(--border-2);color:var(--text-dim);cursor:pointer;font-size:13px;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+  .tab-add:hover{border-color:#444;color:var(--text);background:#141414}
+  .tab-add:disabled{opacity:.4;cursor:not-allowed}
 
-  .notice{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:13px;color:var(--text-dim);margin-bottom:14px}
-  .notice code{background:#1a1a1a;color:var(--text);padding:3px 8px;border-radius:5px;font-family:ui-monospace,monospace;font-size:12px}
-  .notice i{color:var(--text-dim)}
-  .status{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-mute);margin-top:8px}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--crit)}
+  .status-pill{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text-mute);padding:6px 10px;background:#0d0d0d;border:1px solid var(--border);border-radius:999px;white-space:nowrap}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--crit)}
   .dot.on{background:#4ade80}
+
+  .term-host{flex:1;background:#000;border:1px solid var(--border);border-radius:0 0 12px 12px;overflow:hidden;min-height:65vh;position:relative;display:flex;flex-direction:column}
+  .term-pane{position:absolute;inset:0;display:none;background:#000}
+  .term-pane.active{display:block}
+  .term-pane iframe{width:100%;height:100%;border:none;display:block;background:#000}
+
+  .empty-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--text-mute);text-align:center;padding:30px}
+  .empty-state i{font-size:40px;color:#333}
+  .empty-state p{font-size:14px;line-height:1.6}
+  .empty-state .btn{padding:10px 20px;border-radius:10px;background:#1a1a1a;border:1px solid var(--border-2);color:var(--text);font-size:13px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+  .empty-state .btn:hover{background:#222;border-color:#333}
+
+  .toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;border:1px solid var(--border-2);color:var(--text);padding:14px 20px;border-radius:12px;font-size:13px;opacity:0;transform:translateY(20px);transition:.25s;pointer-events:none;z-index:99;box-shadow:0 10px 40px rgba(0,0,0,.8)}
+  .toast.show{opacity:1;transform:translateY(0)}
+  .toast.err{border-color:#3a2020;color:var(--crit)}
+
+  .session-info{margin-top:10px;font-size:11px;color:var(--text-mute);text-align:center}
 </style>
 </head>
 <body>
@@ -876,19 +862,31 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
 </div>
 
 <div class="wrap">
-  <div class="page-title"><h2>Terminal</h2></div>
-
-  <div class="notice" id="notice">
-    <div><i class="fa-solid fa-circle-info"></i> Status: <span id="statusText">Memeriksa…</span> <span class="status"><span class="dot" id="dot"></span></span></div>
-    <div style="margin-top:8px" id="hint"></div>
+  <div class="page-title">
+    <h2>Terminal</h2>
+    <div class="status-pill"><span class="dot" id="globalDot"></span><span id="globalStatus">Memeriksa…</span></div>
   </div>
 
-  <div class="term-wrap" id="termWrap" style="display:none">
-    <iframe id="termFrame" src="about:blank"></iframe>
+  <div class="tabbar" id="tabbar">
+    <button class="tab-add" id="addTab"><i class="fa-solid fa-plus"></i> Sesi Baru</button>
   </div>
+
+  <div class="term-host" id="termHost">
+    <div class="empty-state" id="emptyState">
+      <i class="fa-solid fa-terminal"></i>
+      <p>Belum ada sesi terminal.<br>Klik <b>+ Sesi Baru</b> untuk mulai.</p>
+      <button class="btn" id="emptyAdd"><i class="fa-solid fa-plus"></i> Buka Terminal</button>
+    </div>
+  </div>
+
+  <div class="session-info" id="sessionInfo"></div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
+const $ = id => document.getElementById(id);
+
 const menuBtn = document.getElementById('menuBtn');
 const menuIcon = document.getElementById('menuIcon');
 const dropdown = document.getElementById('dropdown');
@@ -904,39 +902,195 @@ document.addEventListener('click', e => {
   }
 });
 
-async function check(){
+function toast(msg, err=false){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.className = "toast", 2600);
+}
+
+const tabs = new Map();
+let activeId = null;
+let maxSessions = 6;
+let ttydAvailable = true;
+
+function renderTabs(){
+  const bar = $("tabbar");
+  [...bar.querySelectorAll(".tab")].forEach(n => n.remove());
+  const addBtn = $("addTab");
+  for (const t of tabs.values()){
+    const el = document.createElement("div");
+    el.className = "tab" + (t.id === activeId ? " active" : "");
+    el.innerHTML = `
+      <i class="fa-solid fa-terminal" style="font-size:11px;color:var(--text-mute)"></i>
+      <span class="tn">${t.label}</span>
+      <span class="close" title="Tutup">✕</span>
+    `;
+    el.addEventListener("click", e => {
+      if (e.target.classList.contains("close")) return;
+      setActive(t.id);
+    });
+    el.querySelector(".close").addEventListener("click", e => {
+      e.stopPropagation();
+      closeTab(t.id);
+    });
+    bar.insertBefore(el, addBtn);
+  }
+  updateAddButton();
+  updateSessionInfo();
+}
+
+function updateAddButton(){
+  const btn = $("addTab");
+  const full = tabs.size >= maxSessions;
+  btn.disabled = full || !ttydAvailable;
+  if (!ttydAvailable) btn.title = "ttyd tidak terinstall";
+  else if (full) btn.title = `Maksimal ${maxSessions} sesi`;
+  else btn.title = "";
+}
+
+function updateSessionInfo(){
+  $("sessionInfo").textContent = `${tabs.size} / ${maxSessions} sesi aktif`;
+}
+
+function updateEmptyState(){
+  $("emptyState").style.display = tabs.size === 0 ? "flex" : "none";
+}
+
+function setActive(id){
+  if (!tabs.has(id)) return;
+  activeId = id;
+  for (const t of tabs.values()){
+    t.paneEl.classList.toggle("active", t.id === id);
+  }
+  renderTabs();
+}
+
+async function newTab(){
+  if (tabs.size >= maxSessions){
+    toast(`Maksimal ${maxSessions} sesi`, true);
+    return;
+  }
+  try{
+    const r = await fetch("/api/terminal/new", { method: "POST" });
+    const d = await r.json();
+    if (!d.ok){
+      toast(d.error || "Gagal membuat sesi", true);
+      return;
+    }
+    const id = d.id;
+    const port = d.port;
+    const label = `Terminal ${tabs.size + 1}`;
+
+    const paneEl = document.createElement("div");
+    paneEl.className = "term-pane";
+    paneEl.dataset.id = id;
+    const iframe = document.createElement("iframe");
+    iframe.src = `http://${location.hostname}:${port}`;
+    iframe.allow = "clipboard-read; clipboard-write";
+    paneEl.appendChild(iframe);
+    $("termHost").appendChild(paneEl);
+
+    tabs.set(id, { id, port, label, paneEl, iframe });
+    setActive(id);
+    updateEmptyState();
+    toast(`Sesi ${label} dibuka (port ${port})`);
+  }catch(e){
+    toast("Error: " + e.message, true);
+  }
+}
+
+async function closeTab(id){
+  if (!tabs.has(id)) return;
+  if (!confirm("Tutup sesi ini? Semua proses di dalamnya akan dihentikan.")) return;
+  const t = tabs.get(id);
+  tabs.delete(id);
+  t.paneEl.remove();
+  if (activeId === id){
+    const next = tabs.keys().next().value;
+    activeId = next || null;
+    if (next) setActive(next);
+  }
+  renderTabs();
+  updateEmptyState();
+  try{
+    await fetch("/api/terminal/kill", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ id })
+    });
+  }catch(e){}
+}
+
+async function refreshStatus(){
   try{
     const r = await fetch("/api/terminal-status");
     const d = await r.json();
-    const dot = document.getElementById("dot");
-    const txt = document.getElementById("statusText");
-    const hint = document.getElementById("hint");
-    const wrap = document.getElementById("termWrap");
-    const notice = document.getElementById("notice");
-    if(d.port){
+    ttydAvailable = d.available;
+    maxSessions = d.max || 6;
+
+    const serverIds = new Set((d.sessions || []).map(s => s.id));
+    for (const [id, t] of [...tabs.entries()]){
+      if (!serverIds.has(id)){
+        t.paneEl.remove();
+        tabs.delete(id);
+        if (activeId === id) activeId = null;
+      }
+    }
+    for (const s of (d.sessions || [])){
+      if (!tabs.has(s.id)){
+        const label = `Terminal ${tabs.size + 1}`;
+        const paneEl = document.createElement("div");
+        paneEl.className = "term-pane";
+        paneEl.dataset.id = s.id;
+        const iframe = document.createElement("iframe");
+        iframe.src = `http://${location.hostname}:${s.port}`;
+        paneEl.appendChild(iframe);
+        $("termHost").appendChild(paneEl);
+        tabs.set(s.id, { id: s.id, port: s.port, label, paneEl, iframe });
+      }
+    }
+    if (!activeId && tabs.size > 0){
+      setActive(tabs.keys().next().value);
+    }
+
+    renderTabs();
+    updateEmptyState();
+
+    const dot = $("globalDot");
+    const st = $("globalStatus");
+    if (ttydAvailable){
       dot.classList.add("on");
-      txt.textContent = "Aktif di port " + d.port;
-      hint.textContent = "";
-      wrap.style.display = "block";
-      document.getElementById("termFrame").src = "http://" + location.hostname + ":" + d.port;
-      notice.style.display = "none";
+      st.textContent = `${tabs.size} sesi aktif`;
     } else {
       dot.classList.remove("on");
-      txt.textContent = "Tidak berjalan";
-      hint.innerHTML = 'Jalankan di Termux: <code>ttyd -p 7681 -W bash</code>';
-      wrap.style.display = "none";
+      st.textContent = "ttyd tidak terinstall";
     }
-  }catch(e){ document.getElementById("statusText").textContent = "Error: " + e.message; }
+  }catch(e){
+    $("globalStatus").textContent = "Error: " + e.message;
+  }
 }
-check();
-setInterval(check, 5000);
+
+$("addTab").addEventListener("click", newTab);
+$("emptyAdd").addEventListener("click", newTab);
+
+window.addEventListener("beforeunload", e => {
+  if (tabs.size > 0){
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+refreshStatus();
+setInterval(refreshStatus, 5000);
 </script>
 </body>
 </html>
 HTML
 
 # =========================================================
-# server.py
+# server.py — HTTP Server + API + File Manager + Multi-sesi ttyd
 # =========================================================
 cat > "$SERVER_DIR/server.py" <<PY
 #!/usr/bin/env python3
@@ -947,18 +1101,84 @@ import os
 import json
 import cgi
 import shutil
+import signal
+import time
 import urllib.parse
 
 PORT = $PORT
+TTYD_BASE_PORT = $TTYD_BASE_PORT
+TTYD_MAX_SESSIONS = $TTYD_MAX_SESSIONS
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 AUTH_TOKEN = os.environ.get("HOME_SERVER_TOKEN", "$AUTH_TOKEN")
 ALLOWED_ROOT = os.path.expanduser("~")
+
+SESSIONS = {}
+SESSION_COUNTER = [0]
 
 
 def is_safe_path(base, path):
     base = os.path.abspath(base)
     target = os.path.abspath(os.path.join(base, path))
     return target.startswith(base)
+
+
+def port_in_use(port):
+    for s in SESSIONS.values():
+        if s["port"] == port:
+            return True
+    return False
+
+
+def alloc_port():
+    p = TTYD_BASE_PORT
+    while port_in_use(p):
+        p += 1
+    return p
+
+
+def spawn_ttyd():
+    if len(SESSIONS) >= TTYD_MAX_SESSIONS:
+        return None
+    port = alloc_port()
+    try:
+        proc = subprocess.Popen(
+            ["ttyd", "-p", str(port), "-W", "-t", "titleFixed=Termux Shell", "bash"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            preexec_fn=os.setsid,
+        )
+    except FileNotFoundError:
+        return None
+    time.sleep(0.6)
+    SESSION_COUNTER[0] += 1
+    sid = f"s{SESSION_COUNTER[0]}"
+    SESSIONS[sid] = {"port": port, "pid": proc.pid, "created": time.time()}
+    return {"id": sid, "port": port}
+
+
+def kill_ttyd(sid):
+    s = SESSIONS.pop(sid, None)
+    if not s:
+        return False
+    try:
+        os.killpg(os.getpgid(s["pid"]), signal.SIGTERM)
+    except Exception:
+        try:
+            os.kill(s["pid"], signal.SIGTERM)
+        except Exception:
+            pass
+    return True
+
+
+def cleanup_dead_sessions():
+    dead = []
+    for sid, s in SESSIONS.items():
+        try:
+            os.kill(s["pid"], 0)
+        except OSError:
+            dead.append(sid)
+    for sid in dead:
+        SESSIONS.pop(sid, None)
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -985,25 +1205,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return False
         return True
 
-    def _terminal_port(self):
-        try:
-            out = subprocess.check_output(["pgrep", "-f", "ttyd"], stderr=subprocess.DEVNULL).decode().strip()
-            return $TTYD_PORT if out else 0
-        except Exception:
-            return 0
-
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
+
         if path.startswith("/info.json"):
             try:
-                out = subprocess.check_output([os.path.join(DIRECTORY, "info.sh")], timeout=10, stderr=subprocess.DEVNULL)
+                out = subprocess.check_output(
+                    [os.path.join(DIRECTORY, "info.sh")],
+                    timeout=10,
+                    stderr=subprocess.DEVNULL,
+                )
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
                 self.wfile.write(out)
             except Exception:
-                self._json(200, {"cpu":{"pct":0,"cores":0,"freq":0,"freq_max":0,"model":"Error","arch":"-"},"ram":{"total":0,"used":0,"avail":0,"pct":0},"disk":{"total":0,"used":0,"free":0,"pct":0},"net":{"iface":"-","rx":0,"tx":0}})
+                self._json(200, {
+                    "cpu": {"pct": 0, "cores": 0, "freq": 0, "freq_max": 0, "model": "Error", "arch": "-"},
+                    "ram": {"total": 0, "used": 0, "avail": 0, "pct": 0},
+                    "disk": {"total": 0, "used": 0, "free": 0, "pct": 0},
+                    "net": {"iface": "-", "rx": 0, "tx": 0},
+                })
             return
 
         if path.startswith("/api/list"):
@@ -1019,16 +1242,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 items = []
                 for name in sorted(os.listdir(target)):
                     fp = os.path.join(target, name)
-                    try: st = os.stat(fp)
-                    except OSError: continue
-                    items.append({"name": name, "is_dir": os.path.isdir(fp), "size": st.st_size, "mtime": int(st.st_mtime)})
+                    try:
+                        st = os.stat(fp)
+                    except OSError:
+                        continue
+                    items.append({
+                        "name": name,
+                        "is_dir": os.path.isdir(fp),
+                        "size": st.st_size,
+                        "mtime": int(st.st_mtime),
+                    })
                 self._json(200, {"ok": True, "path": rel, "items": items})
             except Exception as e:
                 self._json(500, {"ok": False, "error": str(e)})
             return
 
         if path.startswith("/api/terminal-status"):
-            self._json(200, {"ok": True, "port": self._terminal_port()})
+            cleanup_dead_sessions()
+            self._json(200, {
+                "ok": True,
+                "available": shutil.which("ttyd") is not None,
+                "sessions": [{"id": k, "port": v["port"]} for k, v in SESSIONS.items()],
+                "max": TTYD_MAX_SESSIONS,
+            })
             return
 
         super().do_GET()
@@ -1042,7 +1278,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 ctype, pdict = cgi.parse_header(self.headers.get("Content-Type", ""))
                 if ctype != "multipart/form-data":
                     return self._json(400, {"ok": False, "error": "Expected multipart"})
-                form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD":"POST","CONTENT_TYPE":self.headers.get("Content-Type")})
+                form = cgi.FieldStorage(
+                    fp=self.rfile, headers=self.headers,
+                    environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type")}
+                )
                 rel_dir = form.getvalue("path", "")
                 if not is_safe_path(ALLOWED_ROOT, rel_dir):
                     return self._json(403, {"ok": False, "error": "Forbidden"})
@@ -1050,7 +1289,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 os.makedirs(target_dir, exist_ok=True)
                 saved = []
                 files = form["files"] if "files" in form else []
-                if not isinstance(files, list): files = [files]
+                if not isinstance(files, list):
+                    files = [files]
                 for f in files:
                     if not getattr(f, "filename", None): continue
                     safe_name = os.path.basename(f.filename)
@@ -1074,9 +1314,32 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 target = os.path.join(ALLOWED_ROOT, rel)
                 if not os.path.exists(target):
                     return self._json(404, {"ok": False, "error": "Not found"})
-                if os.path.isdir(target): shutil.rmtree(target)
-                else: os.remove(target)
+                if os.path.isdir(target):
+                    shutil.rmtree(target)
+                else:
+                    os.remove(target)
                 self._json(200, {"ok": True})
+            except Exception as e:
+                self._json(500, {"ok": False, "error": str(e)})
+            return
+
+        if path == "/api/terminal/new":
+            cleanup_dead_sessions()
+            r = spawn_ttyd()
+            if r is None:
+                if shutil.which("ttyd") is None:
+                    return self._json(500, {"ok": False, "error": "ttyd tidak terinstall"})
+                return self._json(429, {"ok": False, "error": f"Maksimal {TTYD_MAX_SESSIONS} sesi"})
+            self._json(200, {"ok": True, **r})
+            return
+
+        if path == "/api/terminal/kill":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                data = json.loads(self.rfile.read(length) or b"{}")
+                sid = data.get("id", "")
+                ok = kill_ttyd(sid)
+                self._json(200, {"ok": ok})
             except Exception as e:
                 self._json(500, {"ok": False, "error": str(e)})
             return
@@ -1095,41 +1358,40 @@ PY
 chmod +x "$SERVER_DIR/server.py"
 
 # =========================================================
-# Deteksi IP
+# Deteksi IP lokal
 # =========================================================
-IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
+IP=$(ip -4 route get 1.1.1.1 2>/dev/null |
+  awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
 if [ -z "$IP" ]; then
-  IP=$(ip -4 addr show wlan0 2>/dev/null | awk '/inet / {sub(/\/.*/, "", $2); print $2; exit}')
+  IP=$(ip -4 addr show wlan0 2>/dev/null |
+    awk '/inet / {sub(/\/.*/, "", $2); print $2; exit}')
 fi
 
 # =========================================================
-# Jalankan ttyd
+# Bersihkan ttyd lama (jika ada)
 # =========================================================
-if command -v ttyd >/dev/null 2>&1; then
-  pkill -f "ttyd -p $TTYD_PORT" 2>/dev/null || true
-  sleep 1
-  nohup ttyd -p "$TTYD_PORT" -W -t titleFixed="Termux Shell" bash >/dev/null 2>&1 &
-  sleep 1
-  TTYD_STATUS="aktif di port $TTYD_PORT"
-else
-  TTYD_STATUS="tidak terinstall"
-fi
+pkill -f "ttyd -p " 2>/dev/null || true
+sleep 1
 
 echo
 echo "================================"
 echo "         SERVER SIAP"
 echo "================================"
-echo "Folder server : $SERVER_DIR"
-echo "Port web      : $PORT"
-echo "Port terminal : $TTYD_PORT ($TTYD_STATUS)"
-echo "Token akses   : $AUTH_TOKEN"
-echo "IP lokal      : ${IP:-Tidak terdeteksi}"
+echo "Folder server    : $SERVER_DIR"
+echo "Port web         : $PORT"
+echo "Port ttyd (base) : $TTYD_BASE_PORT (multi-sesi, max $TTYD_MAX_SESSIONS)"
+echo "Token akses      : $AUTH_TOKEN"
+echo "IP lokal         : ${IP:-Tidak terdeteksi}"
 echo
+echo "Buka di browser perangkat lain:"
 echo "  Dashboard : http://${IP:-IP-HP-SERVER}:$PORT"
 echo "  File      : http://${IP:-IP-HP-SERVER}:$PORT/files.html"
 echo "  Terminal  : http://${IP:-IP-HP-SERVER}:$PORT/terminal.html"
 echo
+echo "Multi-tab terminal: klik '+ Sesi Baru' untuk buka shell tambahan."
+echo "Tekan CTRL+C untuk menghentikan server."
+echo
 
 cd "$SERVER_DIR"
-trap 'pkill -f "ttyd -p $TTYD_PORT" 2>/dev/null || true; exit 0' INT TERM
+trap 'pkill -f "ttyd -p " 2>/dev/null || true; exit 0' INT TERM
 exec python server.py
