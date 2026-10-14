@@ -21,54 +21,101 @@ mkdir -p "$SERVER_DIR"
 # ======================
 cat > "$SERVER_DIR/info.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
-# Output: JSON berisi CPU, RAM, Disk, Network
+# Output: JSON berisi CPU, RAM, Disk, Network, Processor
 
-# ---- CPU (sample /proc/stat 2x) ----
-read_cpu() {
-  awk '/^cpu / {print $2, $3, $4, $5, $6, $7, $8}' /proc/stat
-}
+# =========================================================
+# CPU USAGE
+# =========================================================
 
-CPU1=$(read_cpu)
-sleep 0.5
-CPU2=$(read_cpu)
+# --- Info Processor (model, arsitektur, jumlah core) ---
+CPU_MODEL=$(awk -F: '/^[Hh]ardware/ {gsub(/^ +/,"",$2); print $2; exit}' /proc/cpuinfo)
+[ -z "$CPU_MODEL" ] && CPU_MODEL=$(awk -F: '/^[Mm]odel name/ {gsub(/^ +/,"",$2); print $2; exit}' /proc/cpuinfo)
+[ -z "$CPU_MODEL" ] && CPU_MODEL=$(getprop ro.soc.model 2>/dev/null)
+[ -z "$CPU_MODEL" ] && CPU_MODEL=$(getprop ro.board.platform 2>/dev/null)
+[ -z "$CPU_MODEL" ] && CPU_MODEL="Unknown"
 
-CPU_PCT=$(echo "$CPU1 $CPU2" | awk '
-{
-  # idle = kolom 4 (idle) + kolom 5 (iowait)
-  idle1 = $4 + $5
-  idle2 = $9 + $10
-
-  total1 = $1+$2+$3+$4+$5+$6+$7
-  total2 = $8+$9+$10+$11+$12+$13+$14
-
-  dt = total2 - total1
-  di = idle2 - idle1
-
-  if (dt <= 0) { print "0.0"; exit }
-  printf "%.1f", (1 - di/dt) * 100
-}')
-
-# Jumlah core
+CPU_ARCH=$(uname -m)
 CPU_CORES=$(nproc 2>/dev/null || grep -c ^processor /proc/cpuinfo)
 
-# Frekuensi CPU (kalau tersedia)
+# --- Frekuensi CPU ---
 CPU_FREQ=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null || echo 0)
-CPU_FREQ_MHZ=$(awk "BEGIN {printf \"%.0f\", $CPU_FREQ/1000}")
+CPU_FREQ_MAX=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/null || echo 0)
 
-# ---- RAM ----
+if [ "$CPU_FREQ" -gt 0 ] 2>/dev/null; then
+  CPU_FREQ_MHZ=$((CPU_FREQ / 1000))
+else
+  # Fallback: baca dari /proc/cpuinfo (banyak ARM pakai "BogoMIPS" saja)
+  CPU_FREQ_MHZ=$(awk -F: '/cpu MHz/ {gsub(/ /,"",$2); printf "%.0f", $2; exit}' /proc/cpuinfo)
+  [ -z "$CPU_FREQ_MHZ" ] && CPU_FREQ_MHZ=0
+fi
+
+if [ "$CPU_FREQ_MAX" -gt 0 ] 2>/dev/null; then
+  CPU_FREQ_MAX_MHZ=$((CPU_FREQ_MAX / 1000))
+else
+  CPU_FREQ_MAX_MHZ=0
+fi
+
+# --- CPU Usage: hitung dari /proc/stat (2x sampling) ---
+read_cpu_stat() {
+  awk '/^cpu / {
+    # $1=cpu, $2=user, $3=nice, $4=system, $5=idle, $6=iowait, $7=irq, $8=softirq, $9=steal
+    total = $2+$3+$4+$5+$6+$7+$8+$9
+    idle  = $5 + $6
+    print total, idle
+    exit
+  }' /proc/stat
+}
+
+CPU1=$(read_cpu_stat)
+sleep 0.5
+CPU2=$(read_cpu_stat)
+
+CPU_PCT="0.0"
+if [ -n "$CPU1" ] && [ -n "$CPU2" ]; then
+  T1=$(echo "$CPU1" | awk '{print $1}')
+  I1=$(echo "$CPU1" | awk '{print $2}')
+  T2=$(echo "$CPU2" | awk '{print $1}')
+  I2=$(echo "$CPU2" | awk '{print $2}')
+
+  CPU_PCT=$(awk "BEGIN {
+    dt = $T2 - $T1
+    di = $I2 - $I1
+    if (dt <= 0) { print \"0.0\" }
+    else { printf \"%.1f\", (1 - di/dt) * 100 }
+  }")
+fi
+
+# --- Fallback ke top kalau hasilnya 0.0 dan /proc/stat aneh ---
+if [ "$CPU_PCT" = "0.0" ] || [ -z "$CPU_PCT" ]; then
+  TOP_CPU=$(top -bn1 2>/dev/null | awk -F'[ ,]+' '/[Cc]pu/ && /idle/ {
+    for (i=1;i<=NF;i++) if ($i ~ /idle/) { print $(i-1); exit }
+  }')
+  if [ -n "$TOP_CPU" ]; then
+    CPU_PCT=$(awk "BEGIN {printf \"%.1f\", 100 - $TOP_CPU}")
+  fi
+fi
+
+# =========================================================
+# RAM
+# =========================================================
 RAM_TOTAL=$(awk '/MemTotal/ {printf "%.0f", $2/1024}' /proc/meminfo)
 RAM_AVAIL=$(awk '/MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo)
+[ -z "$RAM_AVAIL" ] && RAM_AVAIL=$(awk '/MemFree/ {printf "%.0f", $2/1024}' /proc/meminfo)
 RAM_USED=$((RAM_TOTAL - RAM_AVAIL))
 RAM_PCT=$(awk "BEGIN {printf \"%.1f\", ($RAM_USED/$RAM_TOTAL)*100}")
 
-# ---- DISK ----
+# =========================================================
+# DISK
+# =========================================================
 DISK_INFO=$(df -k "$HOME" | awk 'NR==2 {print $2, $3, $4}')
 DISK_TOTAL=$(echo "$DISK_INFO" | awk '{printf "%.1f", $1/1024/1024}')
 DISK_USED=$(echo "$DISK_INFO"  | awk '{printf "%.1f", $2/1024/1024}')
 DISK_FREE=$(echo "$DISK_INFO"  | awk '{printf "%.1f", $3/1024/1024}')
 DISK_PCT=$(awk "BEGIN {printf \"%.1f\", ($DISK_USED/$DISK_TOTAL)*100}")
 
-# ---- NETWORK ----
+# =========================================================
+# NETWORK
+# =========================================================
 IFACE=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
 [ -z "$IFACE" ] && IFACE="wlan0"
 
@@ -81,9 +128,19 @@ TX2=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
 RX_MBPS=$(awk "BEGIN {printf \"%.2f\", (($RX2-$RX1)*8)/500000}")
 TX_MBPS=$(awk "BEGIN {printf \"%.2f\", (($TX2-$TX1)*8)/500000}")
 
+# =========================================================
+# JSON OUTPUT
+# =========================================================
 cat <<JSON
 {
-  "cpu":  {"pct": $CPU_PCT, "cores": $CPU_CORES, "freq": $CPU_FREQ_MHZ},
+  "cpu": {
+    "pct": $CPU_PCT,
+    "cores": $CPU_CORES,
+    "freq": $CPU_FREQ_MHZ,
+    "freq_max": $CPU_FREQ_MAX_MHZ,
+    "model": "$CPU_MODEL",
+    "arch": "$CPU_ARCH"
+  },
   "ram":  {"total": $RAM_TOTAL, "used": $RAM_USED, "avail": $RAM_AVAIL, "pct": $RAM_PCT},
   "disk": {"total": $DISK_TOTAL, "used": $DISK_USED, "free": $DISK_FREE, "pct": $DISK_PCT},
   "net":  {"iface": "$IFACE", "rx": $RX_MBPS, "tx": $TX_MBPS}
@@ -126,13 +183,10 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       min-height: 100vh;
       padding: 24px 16px;
     }
-    .wrap { max-width: 720px; margin: 0 auto; }
+    .wrap { max-width: 760px; margin: 0 auto; }
 
     /* Header */
-    header {
-      text-align: center;
-      margin-bottom: 28px;
-    }
+    header { text-align: center; margin-bottom: 28px; }
     .logo {
       display: inline-flex;
       align-items: center;
@@ -180,7 +234,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       grid-template-columns: 1fr;
       gap: 14px;
     }
-    @media (min-width: 600px) {
+    @media (min-width: 620px) {
       .grid { grid-template-columns: 1fr 1fr; }
       .card.full { grid-column: 1 / -1; }
     }
@@ -208,7 +262,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       gap: 10px;
       margin-bottom: 14px;
     }
-    .card-head i {
+    .card-head i.ic {
       width: 34px; height: 34px;
       display: inline-flex;
       align-items: center;
@@ -216,6 +270,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       border-radius: 10px;
       font-size: 15px;
       color: white;
+      flex-shrink: 0;
     }
     .ic-cpu  { background: linear-gradient(135deg,#8b5cf6,#a78bfa); }
     .ic-ram  { background: linear-gradient(135deg,#0ea5e9,#22d3ee); }
@@ -233,6 +288,36 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       color: var(--muted);
       background: rgba(148,163,184,.1);
       padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    /* Chip info processor */
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(15,23,42,.7);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .chip i { color: var(--purple); }
+    .chip .model {
+      font-weight: 600;
+      color: #f1f5f9;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .chip .arch {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(148,163,184,.1);
+      padding: 2px 8px;
       border-radius: 6px;
     }
 
@@ -268,7 +353,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     .fill.warn { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
     .fill.crit { background: linear-gradient(90deg,#ef4444,#f87171); }
 
-    /* Ringkasan persen besar */
     .big-pct {
       font-size: 26px;
       font-weight: 700;
@@ -278,7 +362,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     .pct-amber { color: var(--amber); }
     .pct-red   { color: var(--red); }
 
-    /* Network grid */
+    /* Network */
     .net-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -317,9 +401,6 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       border-top: 1px solid var(--border);
     }
     footer i { color: var(--accent); }
-
-    /* loading state */
-    .loading { opacity: .5; transition: opacity .3s; }
   </style>
 </head>
 <body>
@@ -330,14 +411,21 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       <div class="sub"><span class="dot"></span>Live monitoring · Android</div>
     </header>
 
-    <div class="grid" id="grid">
+    <div class="grid">
       <!-- CPU -->
       <div class="card full">
         <div class="card-head">
-          <i class="ic-cpu fa-solid fa-microchip"></i>
+          <i class="ic ic-cpu fa-solid fa-microchip"></i>
           <h2>CPU</h2>
           <span class="badge" id="cpu-cores">- core</span>
         </div>
+
+        <div class="chip">
+          <i class="fa-solid fa-microchip"></i>
+          <span class="model" id="cpu-model">Memuat…</span>
+          <span class="arch" id="cpu-arch">-</span>
+        </div>
+
         <div class="row">
           <span class="lbl"><i class="fa-solid fa-gauge-high"></i> Pemakaian</span>
           <span class="big-pct" id="cpu-pct">-</span>
@@ -352,7 +440,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       <!-- RAM -->
       <div class="card">
         <div class="card-head">
-          <i class="ic-ram fa-solid fa-memory"></i>
+          <i class="ic ic-ram fa-solid fa-memory"></i>
           <h2>RAM</h2>
         </div>
         <div class="row">
@@ -377,7 +465,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       <!-- DISK -->
       <div class="card">
         <div class="card-head">
-          <i class="ic-disk fa-solid fa-hard-drive"></i>
+          <i class="ic ic-disk fa-solid fa-hard-drive"></i>
           <h2>Disk</h2>
         </div>
         <div class="row">
@@ -402,7 +490,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
       <!-- NETWORK -->
       <div class="card full">
         <div class="card-head">
-          <i class="ic-net fa-solid fa-wifi"></i>
+          <i class="ic ic-net fa-solid fa-wifi"></i>
           <h2>Jaringan</h2>
           <span class="badge" id="iface">-</span>
         </div>
@@ -422,8 +510,7 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     </div>
 
     <footer>
-      <i class="fa-solid fa-rotate"></i>
-      Auto-refresh setiap 2 detik &nbsp;·&nbsp;
+      <i class="fa-solid fa-rotate"></i> Auto-refresh 2 detik &nbsp;·&nbsp;
       <i class="fa-solid fa-heart"></i> Termux
     </footer>
   </div>
@@ -434,7 +521,6 @@ function setBar(id, pct) {
   el.style.width = Math.min(pct, 100) + '%';
   el.className = 'fill' + (pct > 85 ? ' crit' : pct > 65 ? ' warn' : '');
 }
-
 function colorPct(id, pct) {
   const el = document.getElementById(id);
   el.className = 'big-pct ' + (pct > 85 ? 'pct-red' : pct > 65 ? 'pct-amber' : 'pct-green');
@@ -446,10 +532,16 @@ async function refresh() {
     const d = await r.json();
 
     // CPU
-    document.getElementById('cpu-pct').textContent  = d.cpu.pct + '%';
-    document.getElementById('cpu-cores').textContent = d.cpu.cores + ' core';
-    document.getElementById('cpu-freq').textContent  = d.cpu.freq + ' MHz';
+    document.getElementById('cpu-pct').textContent = d.cpu.pct + '%';
     colorPct('cpu-pct', d.cpu.pct);
+    document.getElementById('cpu-cores').textContent = d.cpu.cores + ' core';
+    document.getElementById('cpu-model').textContent = d.cpu.model;
+    document.getElementById('cpu-arch').textContent = d.cpu.arch;
+
+    let freqTxt = d.cpu.freq + ' MHz';
+    if (d.cpu.freq_max > 0) freqTxt += ' / ' + d.cpu.freq_max + ' MHz';
+    document.getElementById('cpu-freq').textContent = freqTxt;
+
     setBar('cpu-bar', d.cpu.pct);
 
     // RAM
@@ -499,17 +591,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             try:
                 out = subprocess.check_output(
                     [os.path.join(DIRECTORY, "info.sh")],
-                    timeout=6
+                    timeout=8
                 )
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
                 self.wfile.write(out)
+            except subprocess.CalledProcessError as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(('{"error":"info.sh failed: %s"}' % e).encode())
             except Exception as e:
                 self.send_response(500)
+                self.send_header("Content-Type", "application/json")
                 self.end_headers()
-                self.wfile.write(str(e).encode())
+                self.wfile.write(('{"error":"%s"}' % e).encode())
             return
         super().do_GET()
 
