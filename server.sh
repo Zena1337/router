@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # =========================================================
-#   ANDROID HOME SERVER - All in One (AVENOX THEME v2)
+#   ANDROID HOME SERVER - All in One (DARK MINIMAL THEME)
 #   Dashboard + File Manager + Web Terminal (ttyd)
 # =========================================================
 
@@ -9,23 +9,19 @@ set -e
 PORT=8080
 TTYD_PORT=7681
 SERVER_DIR="$HOME/home-server"
-# =========================================================
-# TOKEN KEAMANAN - WAJIB DIGANTI!
-# =========================================================
 AUTH_TOKEN="${HOME_SERVER_TOKEN:-rahasia123}"
 
 echo "================================"
 echo "     ANDROID HOME SERVER"
 echo "================================"
 
-# ---------- Install dependencies ----------
 pkg update -y
 pkg install -y python openssh iproute2 procps ttyd
 
 mkdir -p "$SERVER_DIR"
 
 # =========================================================
-# info.sh — Output JSON: CPU, RAM, Disk, Network
+# info.sh — Output JSON
 # =========================================================
 cat > "$SERVER_DIR/info.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
@@ -144,7 +140,7 @@ SH
 chmod +x "$SERVER_DIR/info.sh"
 
 # =========================================================
-# index.html — Dashboard (AVENOX THEME v2 - Topbar)
+# index.html — Dashboard
 # =========================================================
 cat > "$SERVER_DIR/index.html" <<'HTML'
 <!DOCTYPE html>
@@ -152,120 +148,135 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard · Home Server</title>
+  <title>Home Server</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
-      --bg: #000000; --bg-soft: #0a0a0a;
-      --card: #0d0d0d; --card-2: #111111; --border: #1f1f1f;
-      --text: #f5f5f5; --muted: #8a8a8a;
-      --accent: #00e0c6; --accent-2: #00b3a0;
-      --green: #00e0c6; --amber: #ffb020; --red: #ff4d4d;
-      --blue: #4db8ff;
+      --bg: #000000;
+      --surface: #0a0a0a;
+      --surface-2: #121212;
+      --surface-3: #1a1a1a;
+      --border: #1c1c1c;
+      --border-2: #262626;
+      --text: #f0f0f0;
+      --text-dim: #a0a0a0;
+      --text-mute: #6a6a6a;
+      --accent: #e0e0e0;
+      --warn: #d4a056;
+      --crit: #c86161;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #000; }
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 50% 0%, #0a0a0a 0%, #000 70%);
-      color: var(--text); min-height: 100vh; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000;
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* ============ TOPBAR ============ */
     .topbar {
       position: sticky; top: 0; z-index: 50;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px;
-      background: rgba(0,0,0,.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      padding: 18px 20px;
+      background: #000;
       border-bottom: 1px solid var(--border);
     }
     .brand {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 14px; font-weight: 700;
-      letter-spacing: 2px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 17px; font-weight: 700;
+      letter-spacing: 1.5px;
       color: var(--text);
     }
     .brand i {
-      color: var(--accent); font-size: 14px;
-      filter: drop-shadow(0 0 6px rgba(0,224,198,.6));
+      font-size: 22px; color: var(--text);
     }
-    .brand span { color: var(--accent); }
-
     .menu-btn {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: #0d0d0d; border: 1px solid var(--border);
-      color: var(--accent); cursor: pointer;
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: #121212;
+      border: 1px solid var(--border-2);
+      color: var(--text);
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; transition: .2s;
+      font-size: 16px;
+      transition: background .15s, border-color .15s;
     }
-    .menu-btn:hover {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(0,224,198,.25);
-    }
+    .menu-btn:hover { background: #1a1a1a; border-color: #333; }
+    .menu-btn i { transition: transform .2s; }
 
     /* ============ DROPDOWN MENU ============ */
     .menu-wrap { position: relative; }
     .dropdown {
       position: absolute; top: calc(100% + 10px); right: 0;
-      min-width: 180px;
+      min-width: 260px;
       background: #0d0d0d;
-      border: 1px solid var(--border);
-      border-radius: 12px; padding: 6px;
-      box-shadow: 0 12px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(0,224,198,.05);
-      opacity: 0; transform: translateY(-8px) scale(.97);
-      pointer-events: none; transition: .18s ease;
+      border: 1px solid var(--border-2);
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.9);
+      opacity: 0;
+      transform: translateY(-6px) scale(.98);
+      pointer-events: none;
+      transition: opacity .16s, transform .16s;
       transform-origin: top right;
     }
-    .dropdown.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-    .dropdown a {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; border-radius: 8px;
-      color: var(--text); text-decoration: none;
-      font-size: 13px; letter-spacing: .5px;
-      transition: .15s;
+    .dropdown.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
     }
-    .dropdown a i { color: var(--accent); width: 16px; text-align: center; font-size: 13px; }
-    .dropdown a:hover { background: rgba(0,224,198,.08); color: var(--accent); }
-    .dropdown a.active { background: rgba(0,224,198,.1); color: var(--accent); }
-    .dropdown .divider { height: 1px; background: var(--border); margin: 5px 4px; }
+    .dropdown a {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background .15s;
+      position: relative;
+    }
+    .dropdown a:hover { background: #1a1a1a; }
+    .dropdown a.active { background: #1f1f1f; }
+    .dropdown a i.mi {
+      font-size: 18px; color: var(--text-dim); width: 22px;
+      text-align: center;
+    }
+    .dropdown a .label { flex: 1; }
+    .dropdown a .arrow {
+      color: var(--text-mute);
+      font-size: 14px;
+    }
 
     /* ============ LAYOUT ============ */
     .wrap {
       max-width: 900px; margin: 0 auto;
-      padding: 22px 16px 40px;
+      padding: 24px 20px 60px;
     }
-
     .page-title {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 22px;
     }
     .page-title h2 {
-      font-size: 12px; font-weight: 600;
-      letter-spacing: 2.5px; text-transform: uppercase;
-      color: var(--muted);
+      font-size: 22px; font-weight: 700;
+      letter-spacing: -.3px;
+      color: var(--text);
     }
-    .page-title .line {
-      flex: 1; height: 1px;
-      background: linear-gradient(90deg, var(--border), transparent);
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #121212;
+      border: 1px solid var(--border-2);
+      letter-spacing: .3px;
     }
-    .page-title .live {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--accent);
-      padding: 4px 10px; border-radius: 6px;
-      background: rgba(0,224,198,.06);
-      border: 1px solid rgba(0,224,198,.22);
-    }
-    .live-dot {
+    .dot {
       width: 6px; height: 6px; border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
-      animation: pulse 1.6s infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .4; transform: scale(.7); }
+      background: #4ade80;
     }
 
     .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
@@ -275,159 +286,177 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
     }
 
     .card {
-      background: linear-gradient(160deg, var(--card) 0%, var(--card-2) 100%);
-      border: 1px solid var(--border); border-radius: 14px;
-      padding: 18px; position: relative; overflow: hidden;
-      transition: border-color .2s;
+      background: #0d0d0d;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
     }
-    .card:hover { border-color: #2a2a2a; }
-    .card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: .5;
-    }
-
     .card-head {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
     }
-    .card-head .ic {
-      width: 34px; height: 34px;
+    .card-head .ci {
+      width: 38px; height: 38px;
       display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 9px; font-size: 14px;
-      background: #080808; border: 1px solid var(--border);
-      color: var(--accent); flex-shrink: 0;
+      border-radius: 10px;
+      background: #1a1a1a;
+      color: var(--text-dim);
+      font-size: 15px;
+      flex-shrink: 0;
     }
-    .card-head h2 {
-      font-size: 12px; font-weight: 600;
-      letter-spacing: 2px; text-transform: uppercase;
-      color: var(--muted);
+    .card-head h3 {
+      font-size: 15px; font-weight: 600;
+      color: var(--text);
+      letter-spacing: -.2px;
     }
     .card-head .badge {
-      margin-left: auto; font-size: 10px; color: var(--accent);
-      background: rgba(0,224,198,.06); padding: 3px 9px;
-      border: 1px solid rgba(0,224,198,.25);
-      border-radius: 6px; white-space: nowrap;
-      letter-spacing: 1px; text-transform: uppercase;
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-dim);
+      background: #1a1a1a;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      letter-spacing: .3px;
     }
 
     .chip {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; background: #080808;
-      border: 1px solid var(--border); border-radius: 9px;
-      margin-bottom: 14px; font-size: 13px;
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      background: #080808;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
     }
-    .chip i { color: var(--accent); font-size: 12px; }
+    .chip i { color: var(--text-mute); font-size: 13px; }
     .chip .model {
-      font-weight: 600; color: #ededed;
+      font-weight: 500; color: var(--text);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .chip .arch {
-      margin-left: auto; font-size: 10px; color: var(--muted);
-      background: #0f0f0f; padding: 3px 8px; border-radius: 5px;
-      border: 1px solid var(--border);
-      letter-spacing: 1px; text-transform: uppercase;
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-mute);
+      background: #1a1a1a;
+      padding: 3px 8px;
+      border-radius: 5px;
     }
 
     .row {
       display: flex; justify-content: space-between; align-items: center;
-      font-size: 13px; margin: 9px 0;
+      font-size: 14px; margin: 11px 0;
     }
     .row .lbl {
-      color: var(--muted);
-      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--text-dim);
+      display: inline-flex; align-items: center; gap: 10px;
     }
-    .row .lbl i { color: var(--accent); opacity: .8; font-size: 11px; width: 14px; }
+    .row .lbl i {
+      color: var(--text-mute);
+      font-size: 12px; width: 14px;
+    }
     .row .val {
-      font-weight: 600; color: #ededed;
+      font-weight: 600; color: var(--text);
       font-variant-numeric: tabular-nums;
     }
 
     .bar {
-      height: 6px; border-radius: 4px;
-      background: #080808; overflow: hidden; margin-top: 16px;
-      border: 1px solid var(--border);
+      height: 5px; border-radius: 3px;
+      background: #1a1a1a;
+      overflow: hidden;
+      margin-top: 16px;
     }
     .fill {
-      height: 100%; width: 0%; border-radius: 4px;
-      background: linear-gradient(90deg, var(--accent-2), var(--accent));
-      box-shadow: 0 0 12px rgba(0,224,198,.5);
+      height: 100%; width: 0%; border-radius: 3px;
+      background: #d0d0d0;
       transition: width .45s ease, background .3s;
     }
-    .fill.warn { background: linear-gradient(90deg,#cc8c1a,#ffb020); box-shadow: 0 0 12px rgba(255,176,32,.5); }
-    .fill.crit { background: linear-gradient(90deg,#cc3d3d,#ff4d4d); box-shadow: 0 0 12px rgba(255,77,77,.5); }
+    .fill.warn { background: var(--warn); }
+    .fill.crit { background: var(--crit); }
 
     .big-pct {
-      font-size: 26px; font-weight: 700;
-      font-variant-numeric: tabular-nums; letter-spacing: -.5px;
+      font-size: 28px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.8px;
+      color: var(--text);
     }
-    .pct-green { color: var(--accent); }
-    .pct-amber { color: var(--amber); }
-    .pct-red   { color: var(--red); }
+    .pct-green { color: #d0d0d0; }
+    .pct-amber { color: var(--warn); }
+    .pct-red   { color: var(--crit); }
 
     .net-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .net-box {
-      background: #080808; border: 1px solid var(--border);
-      border-radius: 11px; padding: 18px 12px; text-align: center;
-      transition: border-color .2s;
+      background: #080808;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 14px;
+      text-align: center;
     }
-    .net-box:hover { border-color: #2a2a2a; }
-    .net-box i { font-size: 15px; margin-bottom: 8px; display: block; }
+    .net-box i {
+      font-size: 16px; margin-bottom: 10px; display: block;
+      color: var(--text-mute);
+    }
     .net-box .num {
-      font-size: 22px; font-weight: 700;
-      font-variant-numeric: tabular-nums; line-height: 1.2;
+      font-size: 24px; font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+      color: var(--text);
+      letter-spacing: -.5px;
     }
     .net-box .lbl {
-      font-size: 10px; color: var(--muted); margin-top: 6px;
-      text-transform: uppercase; letter-spacing: 1.5px;
+      font-size: 11px; color: var(--text-mute);
+      margin-top: 8px;
+      letter-spacing: .3px;
     }
-    .dl i, .dl .num { color: var(--accent); }
-    .ul i, .ul .num { color: var(--blue); }
 
     footer {
-      text-align: center; font-size: 11px; color: var(--muted);
-      margin-top: 28px; padding-top: 18px;
+      text-align: center; font-size: 12px; color: var(--text-mute);
+      margin-top: 32px; padding-top: 20px;
       border-top: 1px solid var(--border);
-      letter-spacing: 1px; text-transform: uppercase;
     }
-    footer i { color: var(--accent); }
   </style>
 </head>
 <body>
 
-  <!-- ============ TOPBAR ============ -->
   <div class="topbar">
     <div class="brand">
-      <i class="fa-solid fa-server"></i>
-      Home<span>Server</span>
+      <i class="fa-solid fa-cloud"></i>
+      HOME SERVER
     </div>
     <div class="menu-wrap">
       <button class="menu-btn" id="menuBtn" aria-label="Menu">
-        <i class="fa-solid fa-bars"></i>
+        <i class="fa-solid fa-xmark" id="menuIcon"></i>
       </button>
       <div class="dropdown" id="dropdown">
-        <a href="/" class="active"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-        <a href="/files.html"><i class="fa-solid fa-folder"></i> Files</a>
-        <a href="/terminal.html"><i class="fa-solid fa-terminal"></i> Terminal</a>
-        <div class="divider"></div>
-        <a href="#" onclick="location.reload();return false;"><i class="fa-solid fa-rotate"></i> Refresh</a>
+        <a href="/" class="active">
+          <i class="mi fa-solid fa-house"></i>
+          <span class="label">Home</span>
+          <i class="arrow fa-solid fa-chevron-right"></i>
+        </a>
+        <a href="/files.html">
+          <i class="mi fa-solid fa-server"></i>
+          <span class="label">File</span>
+          <i class="arrow fa-solid fa-chevron-right"></i>
+        </a>
+        <a href="/terminal.html">
+          <i class="mi fa-solid fa-receipt"></i>
+          <span class="label">Terminal</span>
+          <i class="arrow fa-solid fa-chevron-right"></i>
+        </a>
       </div>
     </div>
   </div>
 
-  <!-- ============ CONTENT ============ -->
   <div class="wrap">
     <div class="page-title">
-      <h2>System Overview</h2>
-      <div class="line"></div>
-      <div class="live"><span class="live-dot"></span> Live</div>
+      <h2>Dashboard</h2>
+      <div class="status-pill"><span class="dot"></span> Live</div>
     </div>
 
     <div class="grid">
-      <!-- CPU -->
       <div class="card full">
         <div class="card-head">
-          <i class="ic fa-solid fa-microchip"></i>
-          <h2>CPU</h2>
+          <i class="ci fa-solid fa-microchip"></i>
+          <h3>CPU</h3>
           <span class="badge" id="cpu-cores">- core</span>
         </div>
         <div class="chip">
@@ -446,11 +475,10 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
         <div class="bar"><div class="fill" id="cpu-bar"></div></div>
       </div>
 
-      <!-- RAM -->
       <div class="card">
         <div class="card-head">
-          <i class="ic fa-solid fa-memory"></i>
-          <h2>RAM</h2>
+          <i class="ci fa-solid fa-memory"></i>
+          <h3>RAM</h3>
         </div>
         <div class="row"><span class="lbl"><i class="fa-solid fa-chart-pie"></i> Pemakaian</span><span class="val" id="ram-pct">-</span></div>
         <div class="row"><span class="lbl"><i class="fa-solid fa-database"></i> Terpakai</span><span class="val" id="ram-used">-</span></div>
@@ -459,11 +487,10 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
         <div class="bar"><div class="fill" id="ram-bar"></div></div>
       </div>
 
-      <!-- DISK -->
       <div class="card">
         <div class="card-head">
-          <i class="ic fa-solid fa-hard-drive"></i>
-          <h2>Disk</h2>
+          <i class="ci fa-solid fa-hard-drive"></i>
+          <h3>Disk</h3>
         </div>
         <div class="row"><span class="lbl"><i class="fa-solid fa-chart-pie"></i> Pemakaian</span><span class="val" id="disk-pct">-</span></div>
         <div class="row"><span class="lbl"><i class="fa-solid fa-database"></i> Terpakai</span><span class="val" id="disk-used">-</span></div>
@@ -472,52 +499,47 @@ cat > "$SERVER_DIR/index.html" <<'HTML'
         <div class="bar"><div class="fill" id="disk-bar"></div></div>
       </div>
 
-      <!-- NETWORK -->
       <div class="card full">
         <div class="card-head">
-          <i class="ic fa-solid fa-wifi"></i>
-          <h2>Jaringan</h2>
+          <i class="ci fa-solid fa-wifi"></i>
+          <h3>Jaringan</h3>
           <span class="badge" id="iface">-</span>
         </div>
         <div class="net-grid">
-          <div class="net-box dl">
+          <div class="net-box">
             <i class="fa-solid fa-arrow-down"></i>
             <div class="num" id="rx">-</div>
-            <div class="lbl">Download · Mbps</div>
+            <div class="lbl">DOWNLOAD · MBPS</div>
           </div>
-          <div class="net-box ul">
+          <div class="net-box">
             <i class="fa-solid fa-arrow-up"></i>
             <div class="num" id="tx">-</div>
-            <div class="lbl">Upload · Mbps</div>
+            <div class="lbl">UPLOAD · MBPS</div>
           </div>
         </div>
       </div>
     </div>
 
-    <footer>
-      <i class="fa-solid fa-rotate"></i> Auto-refresh 2 detik &nbsp;·&nbsp;
-      <i class="fa-solid fa-heart"></i> Termux
-    </footer>
+    <footer>Auto-refresh 2 detik</footer>
   </div>
 
 <script>
-// ===== Dropdown menu =====
 const menuBtn = document.getElementById('menuBtn');
+const menuIcon = document.getElementById('menuIcon');
 const dropdown = document.getElementById('dropdown');
+
 menuBtn.addEventListener('click', e => {
   e.stopPropagation();
-  dropdown.classList.toggle('open');
+  const open = dropdown.classList.toggle('open');
+  menuIcon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
 });
 document.addEventListener('click', e => {
-  if (!dropdown.contains(e.target) && e.target !== menuBtn) {
+  if (!dropdown.contains(e.target) && e.target !== menuBtn && !menuBtn.contains(e.target)) {
     dropdown.classList.remove('open');
+    menuIcon.className = 'fa-solid fa-bars';
   }
 });
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') dropdown.classList.remove('open');
-});
 
-// ===== Dashboard refresh =====
 function setBar(id, pct) {
   const el = document.getElementById(id);
   el.style.width = Math.min(pct, 100) + '%';
@@ -569,7 +591,7 @@ setInterval(refresh, 2000);
 HTML
 
 # =========================================================
-# files.html — File Manager (AVENOX THEME v2 - Topbar)
+# files.html
 # =========================================================
 cat > "$SERVER_DIR/files.html" <<'HTML'
 <!DOCTYPE html>
@@ -577,121 +599,107 @@ cat > "$SERVER_DIR/files.html" <<'HTML'
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Files · Home Server</title>
+<title>File · Home Server</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-  :root{--bg:#000;--card:#0d0d0d;--card-2:#111;--border:#1f1f1f;--text:#f5f5f5;--muted:#8a8a8a;--accent:#00e0c6;--accent-2:#00b3a0;--green:#00e0c6;--red:#ff4d4d;--amber:#ffb020;--blue:#4db8ff;}
+  :root{--bg:#000;--surface:#0d0d0d;--surface-2:#121212;--border:#1c1c1c;--border-2:#262626;--text:#f0f0f0;--text-dim:#a0a0a0;--text-mute:#6a6a6a;--warn:#d4a056;--crit:#c86161;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh}
+  html,body{background:#000}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#000;color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 
-  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text)}
-  .brand i{color:var(--accent);font-size:14px;filter:drop-shadow(0 0 6px rgba(0,224,198,.6))}
-  .brand span{color:var(--accent)}
-  .menu-btn{width:40px;height:40px;border-radius:10px;background:#0d0d0d;border:1px solid var(--border);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s}
-  .menu-btn:hover{border-color:var(--accent);box-shadow:0 0 12px rgba(0,224,198,.25)}
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:#000;border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700;letter-spacing:1.5px;color:var(--text)}
+  .brand i{font-size:22px;color:var(--text)}
+  .menu-btn{width:44px;height:44px;border-radius:12px;background:#121212;border:1px solid var(--border-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s,border-color .15s}
+  .menu-btn:hover{background:#1a1a1a;border-color:#333}
   .menu-wrap{position:relative}
-  .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:180px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);opacity:0;transform:translateY(-8px) scale(.97);pointer-events:none;transition:.18s ease;transform-origin:top right}
+  .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:260px;background:#0d0d0d;border:1px solid var(--border-2);border-radius:16px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.9);opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transition:opacity .16s,transform .16s;transform-origin:top right}
   .dropdown.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-  .dropdown a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text);text-decoration:none;font-size:13px;letter-spacing:.5px;transition:.15s}
-  .dropdown a i{color:var(--accent);width:16px;text-align:center;font-size:13px}
-  .dropdown a:hover{background:rgba(0,224,198,.08);color:var(--accent)}
-  .dropdown a.active{background:rgba(0,224,198,.1);color:var(--accent)}
-  .dropdown .divider{height:1px;background:var(--border);margin:5px 4px}
+  .dropdown a{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;color:var(--text);text-decoration:none;font-size:15px;font-weight:500;transition:background .15s}
+  .dropdown a:hover{background:#1a1a1a}
+  .dropdown a.active{background:#1f1f1f}
+  .dropdown a i.mi{font-size:18px;color:var(--text-dim);width:22px;text-align:center}
+  .dropdown a .label{flex:1}
+  .dropdown a .arrow{color:var(--text-mute);font-size:14px}
 
-  .wrap{max-width:820px;margin:0 auto;padding:22px 16px 40px}
-  .page-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
-  .page-title h2{font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
-  .page-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 20px 60px}
+  .page-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .page-title h2{font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--text)}
 
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
-  .btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.2s;letter-spacing:.5px}
-  .btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(0,224,198,.15)}
-  .btn.danger{border-color:var(--red);color:var(--red)}
-  .btn.danger:hover{background:rgba(255,77,77,.08);box-shadow:0 0 10px rgba(255,77,77,.2)}
+  .btn{padding:10px 16px;border-radius:10px;border:1px solid var(--border-2);background:var(--surface-2);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.15s;font-weight:500}
+  .btn:hover{background:#1a1a1a;border-color:#333}
+  .btn.danger{border-color:#3a2020;color:var(--crit)}
+  .btn.danger:hover{background:rgba(200,97,97,.08)}
 
-  .path{flex:1;min-width:200px;padding:9px 12px;background:#080808;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:ui-monospace,monospace}
-  .path:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,224,198,.12)}
+  .path{flex:1;min-width:200px;padding:10px 14px;background:#080808;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:13px;font-family:ui-monospace,monospace}
+  .path:focus{outline:none;border-color:#333}
 
-  .card{background:linear-gradient(160deg,var(--card) 0%,var(--card-2) 100%);border:1px solid var(--border);border-radius:12px;padding:10px;position:relative;overflow:hidden}
-  .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.5}
-
-  .item{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:8px;border-bottom:1px solid var(--border);transition:.15s}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:8px}
+  .item{display:flex;align-items:center;gap:14px;padding:14px 14px;border-radius:10px;border-bottom:1px solid var(--border);transition:background .15s}
   .item:last-child{border-bottom:none}
-  .item:hover{background:rgba(0,224,198,.04)}
-  .item .ico{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#080808;border:1px solid var(--border);color:var(--accent);flex-shrink:0;font-size:13px}
-  .item .ico.dir{color:var(--amber)}
+  .item:hover{background:#141414}
+  .item .ico{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#1a1a1a;color:var(--text-dim);flex-shrink:0;font-size:14px}
+  .item .ico.dir{color:var(--warn)}
   .item .meta{flex:1;min-width:0}
-  .item .name{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ededed}
-  .item .info{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+  .item .name{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+  .item .info{font-size:11px;color:var(--text-mute);margin-top:3px}
   .item .actions{display:flex;gap:6px}
-  .item .actions button{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:#080808;color:var(--muted);cursor:pointer;font-size:12px;transition:.2s}
-  .item .actions button:hover{border-color:var(--red);color:var(--red)}
-  .item .actions button.dl:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 8px rgba(0,224,198,.25)}
-  .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase}
+  .item .actions button{width:36px;height:36px;border-radius:8px;border:1px solid var(--border-2);background:#0d0d0d;color:var(--text-dim);cursor:pointer;font-size:13px;transition:.15s}
+  .item .actions button:hover{background:#1a1a1a;color:var(--text)}
+  .item .actions button.dl:hover{color:var(--text)}
+  .empty{text-align:center;padding:50px 20px;color:var(--text-mute);font-size:13px}
 
-  .drop{border:1px dashed var(--border);border-radius:12px;padding:26px;text-align:center;color:var(--muted);font-size:12px;margin-bottom:14px;transition:.2s;background:#080808;letter-spacing:.5px}
-  .drop.over{border-color:var(--accent);background:rgba(0,224,198,.05);color:var(--accent);box-shadow:0 0 20px rgba(0,224,198,.15) inset}
-  .drop i{color:var(--accent)}
+  .drop{border:1px dashed var(--border-2);border-radius:14px;padding:30px;text-align:center;color:var(--text-mute);font-size:13px;margin-bottom:14px;transition:.15s;background:#080808}
+  .drop.over{border-color:#444;background:#111;color:var(--text)}
+  .drop i{color:var(--text-dim);font-size:26px;margin-bottom:6px;display:block}
 
   .token-bar{display:flex;gap:8px;margin-bottom:14px}
-  .token-bar input{flex:1;padding:9px 12px;background:#080808;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:ui-monospace,monospace}
-  .token-bar input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,224,198,.12)}
+  .token-bar input{flex:1;padding:10px 14px;background:#080808;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:13px;font-family:ui-monospace,monospace}
+  .token-bar input:focus{outline:none;border-color:#333}
 
-  .toast{position:fixed;bottom:20px;right:20px;background:var(--card);border:1px solid var(--accent);color:var(--accent);padding:12px 18px;border-radius:10px;font-size:12px;opacity:0;transform:translateY(20px);transition:.3s;pointer-events:none;z-index:99;letter-spacing:.5px;box-shadow:0 0 20px rgba(0,224,198,.2)}
+  .toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;border:1px solid var(--border-2);color:var(--text);padding:14px 20px;border-radius:12px;font-size:13px;opacity:0;transform:translateY(20px);transition:.25s;pointer-events:none;z-index:99;box-shadow:0 10px 40px rgba(0,0,0,.8)}
   .toast.show{opacity:1;transform:translateY(0)}
-  .toast.err{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(255,77,77,.2)}
+  .toast.err{border-color:#3a2020;color:var(--crit)}
 </style>
 </head>
 <body>
 
-  <div class="topbar">
-    <div class="brand">
-      <i class="fa-solid fa-server"></i>
-      Home<span>Server</span>
-    </div>
-    <div class="menu-wrap">
-      <button class="menu-btn" id="menuBtn" aria-label="Menu">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div class="dropdown" id="dropdown">
-        <a href="/"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-        <a href="/files.html" class="active"><i class="fa-solid fa-folder"></i> Files</a>
-        <a href="/terminal.html"><i class="fa-solid fa-terminal"></i> Terminal</a>
-        <div class="divider"></div>
-        <a href="#" onclick="location.reload();return false;"><i class="fa-solid fa-rotate"></i> Refresh</a>
-      </div>
+<div class="topbar">
+  <div class="brand"><i class="fa-solid fa-cloud"></i> HOME SERVER</div>
+  <div class="menu-wrap">
+    <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fa-solid fa-xmark" id="menuIcon"></i></button>
+    <div class="dropdown" id="dropdown">
+      <a href="/"><i class="mi fa-solid fa-house"></i><span class="label">Home</span><i class="arrow fa-solid fa-chevron-right"></i></a>
+      <a href="/files.html" class="active"><i class="mi fa-solid fa-server"></i><span class="label">File</span><i class="arrow fa-solid fa-chevron-right"></i></a>
+      <a href="/terminal.html"><i class="mi fa-solid fa-receipt"></i><span class="label">Terminal</span><i class="arrow fa-solid fa-chevron-right"></i></a>
     </div>
   </div>
+</div>
 
-  <div class="wrap">
-    <div class="page-title">
-      <h2>File Manager</h2>
-      <div class="line"></div>
-    </div>
+<div class="wrap">
+  <div class="page-title"><h2>File</h2></div>
 
-    <div class="token-bar">
-      <input type="password" id="token" placeholder="Token akses (X-Auth-Token)">
-      <button class="btn" onclick="saveToken()"><i class="fa-solid fa-key"></i></button>
-    </div>
-
-    <div class="toolbar">
-      <input class="path" id="path" value="" placeholder="Path relatif dari HOME">
-      <button class="btn" onclick="go()"><i class="fa-solid fa-arrow-right"></i></button>
-      <button class="btn" onclick="goUp()"><i class="fa-solid fa-arrow-up"></i></button>
-      <button class="btn" onclick="refresh()"><i class="fa-solid fa-rotate"></i></button>
-    </div>
-
-    <div class="drop" id="drop">
-      <i class="fa-solid fa-cloud-arrow-up" style="font-size:24px"></i>
-      <div style="margin-top:8px">Tarik & lepas file di sini, atau <label for="fileInput" style="color:var(--accent);cursor:pointer;text-decoration:underline">pilih file</label></div>
-      <input type="file" id="fileInput" multiple style="display:none">
-    </div>
-
-    <div class="card" id="list">
-      <div class="empty">Memuat…</div>
-    </div>
+  <div class="token-bar">
+    <input type="password" id="token" placeholder="Token akses">
+    <button class="btn" onclick="saveToken()"><i class="fa-solid fa-key"></i></button>
   </div>
+
+  <div class="toolbar">
+    <input class="path" id="path" value="" placeholder="Path relatif dari HOME">
+    <button class="btn" onclick="go()"><i class="fa-solid fa-arrow-right"></i></button>
+    <button class="btn" onclick="goUp()"><i class="fa-solid fa-arrow-up"></i></button>
+    <button class="btn" onclick="refresh()"><i class="fa-solid fa-rotate"></i></button>
+  </div>
+
+  <div class="drop" id="drop">
+    <i class="fa-solid fa-cloud-arrow-up"></i>
+    <div>Tarik & lepas file, atau <label for="fileInput" style="color:#e0e0e0;cursor:pointer;text-decoration:underline">pilih file</label></div>
+    <input type="file" id="fileInput" multiple style="display:none">
+  </div>
+
+  <div class="card" id="list"><div class="empty">Memuat…</div></div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -699,22 +707,22 @@ cat > "$SERVER_DIR/files.html" <<'HTML'
 const $ = id => document.getElementById(id);
 let currentPath = "";
 
-// Dropdown
 const menuBtn = document.getElementById('menuBtn');
+const menuIcon = document.getElementById('menuIcon');
 const dropdown = document.getElementById('dropdown');
 menuBtn.addEventListener('click', e => {
   e.stopPropagation();
-  dropdown.classList.toggle('open');
+  const open = dropdown.classList.toggle('open');
+  menuIcon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
 });
 document.addEventListener('click', e => {
-  if (!dropdown.contains(e.target) && e.target !== menuBtn) dropdown.classList.remove('open');
+  if (!dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
+    dropdown.classList.remove('open');
+    menuIcon.className = 'fa-solid fa-bars';
+  }
 });
 
-function saveToken(){
-  localStorage.setItem("hs_token", $("token").value);
-  toast("Token disimpan");
-  refresh();
-}
+function saveToken(){ localStorage.setItem("hs_token", $("token").value); toast("Token disimpan"); refresh(); }
 function getToken(){ return localStorage.getItem("hs_token") || ""; }
 $("token").value = getToken();
 
@@ -724,7 +732,6 @@ function toast(msg, err=false){
   t.className = "toast show" + (err ? " err" : "");
   setTimeout(()=>t.className = "toast", 2500);
 }
-
 function fmtSize(b){
   if(b < 1024) return b + " B";
   if(b < 1024*1024) return (b/1024).toFixed(1) + " KB";
@@ -736,13 +743,10 @@ function fmtDate(ts){ return new Date(ts*1000).toLocaleString("id-ID"); }
 async function refresh(){
   $("list").innerHTML = '<div class="empty">Memuat…</div>';
   try{
-    const r = await fetch("/api/list?path=" + encodeURIComponent(currentPath), {
-      headers: { "X-Auth-Token": getToken() }
-    });
+    const r = await fetch("/api/list?path=" + encodeURIComponent(currentPath), { headers: { "X-Auth-Token": getToken() } });
     const d = await r.json();
-    if(!d.ok){ $("list").innerHTML = '<div class="empty" style="color:var(--red)">' + (d.error || "Error") + '</div>'; return; }
+    if(!d.ok){ $("list").innerHTML = '<div class="empty" style="color:var(--crit)">' + (d.error || "Error") + '</div>'; return; }
     if(d.items.length === 0){ $("list").innerHTML = '<div class="empty"><i class="fa-solid fa-folder-open"></i><br>Folder kosong</div>'; return; }
-
     let html = "";
     for(const it of d.items){
       const rel = currentPath ? currentPath.replace(/\/$/,"") + "/" + it.name : it.name;
@@ -763,7 +767,7 @@ async function refresh(){
         </div>`;
     }
     $("list").innerHTML = html;
-  }catch(e){ $("list").innerHTML = '<div class="empty" style="color:var(--red)">Gagal memuat: '+e.message+'</div>'; }
+  }catch(e){ $("list").innerHTML = '<div class="empty" style="color:var(--crit)">Gagal memuat: '+e.message+'</div>'; }
 }
 
 function openDir(p){ currentPath = p; $("path").value = p; refresh(); }
@@ -776,54 +780,34 @@ function goUp(){
   $("path").value = currentPath;
   refresh();
 }
-
 function download(rel){
   const url = "/" + encodeURIComponent(rel).replace(/%2F/g, "/") + "?token=" + encodeURIComponent(getToken());
   window.open(url, "_blank");
 }
-
 async function del(rel, isDir){
   if(!confirm(`Hapus ${isDir ? "folder" : "file"} "${rel}"?`)) return;
   try{
-    const r = await fetch("/api/delete", {
-      method: "POST",
-      headers: {"Content-Type": "application/json", "X-Auth-Token": getToken()},
-      body: JSON.stringify({path: rel})
-    });
+    const r = await fetch("/api/delete", { method: "POST", headers: {"Content-Type": "application/json", "X-Auth-Token": getToken()}, body: JSON.stringify({path: rel}) });
     const d = await r.json();
-    if(d.ok){ toast("Berhasil dihapus"); refresh(); }
-    else toast(d.error || "Gagal", true);
+    if(d.ok){ toast("Berhasil dihapus"); refresh(); } else toast(d.error || "Gagal", true);
   }catch(e){ toast(e.message, true); }
 }
-
 async function uploadFiles(files){
   if(!files.length) return;
   const fd = new FormData();
   fd.append("path", currentPath);
   for(const f of files) fd.append("files", f, f.name);
   try{
-    const r = await fetch("/api/upload", {
-      method: "POST",
-      headers: {"X-Auth-Token": getToken()},
-      body: fd
-    });
+    const r = await fetch("/api/upload", { method: "POST", headers: {"X-Auth-Token": getToken()}, body: fd });
     const d = await r.json();
-    if(d.ok){ toast("Terupload: " + d.saved.join(", ")); refresh(); }
-    else toast(d.error || "Gagal upload", true);
+    if(d.ok){ toast("Terupload: " + d.saved.join(", ")); refresh(); } else toast(d.error || "Gagal upload", true);
   }catch(e){ toast(e.message, true); }
 }
-
 $("fileInput").addEventListener("change", e => uploadFiles(e.target.files));
-
 const drop = $("drop");
-["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => {
-  e.preventDefault(); drop.classList.add("over");
-}));
-["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => {
-  e.preventDefault(); drop.classList.remove("over");
-}));
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => uploadFiles(e.dataTransfer.files));
-
 refresh();
 </script>
 </body>
@@ -831,7 +815,7 @@ refresh();
 HTML
 
 # =========================================================
-# terminal.html — Web Terminal (AVENOX THEME v2 - Topbar)
+# terminal.html
 # =========================================================
 cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <!DOCTYPE html>
@@ -842,89 +826,82 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <title>Terminal · Home Server</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-  :root{--bg:#000;--card:#0d0d0d;--border:#1f1f1f;--text:#f5f5f5;--muted:#8a8a8a;--accent:#00e0c6;--green:#00e0c6;--red:#ff4d4d;}
+  :root{--bg:#000;--surface:#0d0d0d;--surface-2:#121212;--border:#1c1c1c;--border-2:#262626;--text:#f0f0f0;--text-dim:#a0a0a0;--text-mute:#6a6a6a;--crit:#c86161;}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Segoe UI',system-ui,sans-serif;background:radial-gradient(circle at 50% 0%,#0a0a0a 0%,#000 70%);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+  html,body{background:#000}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#000;color:var(--text);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 
-  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text)}
-  .brand i{color:var(--accent);font-size:14px;filter:drop-shadow(0 0 6px rgba(0,224,198,.6))}
-  .brand span{color:var(--accent)}
-  .menu-btn{width:40px;height:40px;border-radius:10px;background:#0d0d0d;border:1px solid var(--border);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s}
-  .menu-btn:hover{border-color:var(--accent);box-shadow:0 0 12px rgba(0,224,198,.25)}
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:#000;border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700;letter-spacing:1.5px;color:var(--text)}
+  .brand i{font-size:22px;color:var(--text)}
+  .menu-btn{width:44px;height:44px;border-radius:12px;background:#121212;border:1px solid var(--border-2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background .15s,border-color .15s}
+  .menu-btn:hover{background:#1a1a1a;border-color:#333}
   .menu-wrap{position:relative}
-  .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:180px;background:#0d0d0d;border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.7);opacity:0;transform:translateY(-8px) scale(.97);pointer-events:none;transition:.18s ease;transform-origin:top right}
+  .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:260px;background:#0d0d0d;border:1px solid var(--border-2);border-radius:16px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,.9);opacity:0;transform:translateY(-6px) scale(.98);pointer-events:none;transition:opacity .16s,transform .16s;transform-origin:top right}
   .dropdown.open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-  .dropdown a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:var(--text);text-decoration:none;font-size:13px;letter-spacing:.5px;transition:.15s}
-  .dropdown a i{color:var(--accent);width:16px;text-align:center;font-size:13px}
-  .dropdown a:hover{background:rgba(0,224,198,.08);color:var(--accent)}
-  .dropdown a.active{background:rgba(0,224,198,.1);color:var(--accent)}
-  .dropdown .divider{height:1px;background:var(--border);margin:5px 4px}
+  .dropdown a{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;color:var(--text);text-decoration:none;font-size:15px;font-weight:500;transition:background .15s}
+  .dropdown a:hover{background:#1a1a1a}
+  .dropdown a.active{background:#1f1f1f}
+  .dropdown a i.mi{font-size:18px;color:var(--text-dim);width:22px;text-align:center}
+  .dropdown a .label{flex:1}
+  .dropdown a .arrow{color:var(--text-mute);font-size:14px}
 
-  .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 40px;width:100%;flex:1;display:flex;flex-direction:column}
-  .page-title{display:flex;align-items:center;gap:10px;margin-bottom:20px}
-  .page-title h2{font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)}
-  .page-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 20px 60px;width:100%;flex:1;display:flex;flex-direction:column}
+  .page-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+  .page-title h2{font-size:22px;font-weight:700;letter-spacing:-.3px;color:var(--text)}
 
-  .term-wrap{flex:1;background:#000;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:70vh;position:relative;box-shadow:0 0 24px rgba(0,224,198,.08)}
+  .term-wrap{flex:1;background:#000;border:1px solid var(--border);border-radius:14px;overflow:hidden;min-height:70vh}
   iframe{width:100%;height:100%;border:none;display:block;min-height:70vh}
 
-  .notice{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:.3px}
-  .notice code{background:rgba(0,224,198,.08);color:var(--accent);padding:2px 6px;border-radius:4px;font-family:ui-monospace,monospace;font-size:11px}
-  .notice i{color:var(--accent)}
-
-  .status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:1px;text-transform:uppercase}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
-  .dot.on{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .notice{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:13px;color:var(--text-dim);margin-bottom:14px}
+  .notice code{background:#1a1a1a;color:var(--text);padding:3px 8px;border-radius:5px;font-family:ui-monospace,monospace;font-size:12px}
+  .notice i{color:var(--text-dim)}
+  .status{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-mute);margin-top:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--crit)}
+  .dot.on{background:#4ade80}
 </style>
 </head>
 <body>
 
-  <div class="topbar">
-    <div class="brand">
-      <i class="fa-solid fa-server"></i>
-      Home<span>Server</span>
-    </div>
-    <div class="menu-wrap">
-      <button class="menu-btn" id="menuBtn" aria-label="Menu">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div class="dropdown" id="dropdown">
-        <a href="/"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
-        <a href="/files.html"><i class="fa-solid fa-folder"></i> Files</a>
-        <a href="/terminal.html" class="active"><i class="fa-solid fa-terminal"></i> Terminal</a>
-        <div class="divider"></div>
-        <a href="#" onclick="location.reload();return false;"><i class="fa-solid fa-rotate"></i> Refresh</a>
-      </div>
+<div class="topbar">
+  <div class="brand"><i class="fa-solid fa-cloud"></i> HOME SERVER</div>
+  <div class="menu-wrap">
+    <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fa-solid fa-xmark" id="menuIcon"></i></button>
+    <div class="dropdown" id="dropdown">
+      <a href="/"><i class="mi fa-solid fa-house"></i><span class="label">Home</span><i class="arrow fa-solid fa-chevron-right"></i></a>
+      <a href="/files.html"><i class="mi fa-solid fa-server"></i><span class="label">File</span><i class="arrow fa-solid fa-chevron-right"></i></a>
+      <a href="/terminal.html" class="active"><i class="mi fa-solid fa-receipt"></i><span class="label">Terminal</span><i class="arrow fa-solid fa-chevron-right"></i></a>
     </div>
   </div>
+</div>
 
-  <div class="wrap">
-    <div class="page-title">
-      <h2>Web Terminal</h2>
-      <div class="line"></div>
-    </div>
+<div class="wrap">
+  <div class="page-title"><h2>Terminal</h2></div>
 
-    <div class="notice" id="notice">
-      <div><i class="fa-solid fa-circle-info"></i> Status: <span id="statusText">Memeriksa…</span> <span class="status"><span class="dot" id="dot"></span></span></div>
-      <div style="margin-top:8px" id="hint"></div>
-    </div>
-
-    <div class="term-wrap" id="termWrap" style="display:none">
-      <iframe id="termFrame" src="about:blank"></iframe>
-    </div>
+  <div class="notice" id="notice">
+    <div><i class="fa-solid fa-circle-info"></i> Status: <span id="statusText">Memeriksa…</span> <span class="status"><span class="dot" id="dot"></span></span></div>
+    <div style="margin-top:8px" id="hint"></div>
   </div>
+
+  <div class="term-wrap" id="termWrap" style="display:none">
+    <iframe id="termFrame" src="about:blank"></iframe>
+  </div>
+</div>
 
 <script>
-// Dropdown
 const menuBtn = document.getElementById('menuBtn');
+const menuIcon = document.getElementById('menuIcon');
 const dropdown = document.getElementById('dropdown');
 menuBtn.addEventListener('click', e => {
   e.stopPropagation();
-  dropdown.classList.toggle('open');
+  const open = dropdown.classList.toggle('open');
+  menuIcon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
 });
 document.addEventListener('click', e => {
-  if (!dropdown.contains(e.target) && e.target !== menuBtn) dropdown.classList.remove('open');
+  if (!dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
+    dropdown.classList.remove('open');
+    menuIcon.className = 'fa-solid fa-bars';
+  }
 });
 
 async function check(){
@@ -936,23 +913,20 @@ async function check(){
     const hint = document.getElementById("hint");
     const wrap = document.getElementById("termWrap");
     const notice = document.getElementById("notice");
-
     if(d.port){
       dot.classList.add("on");
-      txt.textContent = "ttyd aktif di port " + d.port;
+      txt.textContent = "Aktif di port " + d.port;
       hint.textContent = "";
       wrap.style.display = "block";
       document.getElementById("termFrame").src = "http://" + location.hostname + ":" + d.port;
       notice.style.display = "none";
     } else {
       dot.classList.remove("on");
-      txt.textContent = "ttyd tidak berjalan";
-      hint.innerHTML = 'Jalankan di Termux: <code>ttyd -p 7681 -W bash</code><br>Atau install: <code>pkg install ttyd</code>';
+      txt.textContent = "Tidak berjalan";
+      hint.innerHTML = 'Jalankan di Termux: <code>ttyd -p 7681 -W bash</code>';
       wrap.style.display = "none";
     }
-  }catch(e){
-    document.getElementById("statusText").textContent = "Error: " + e.message;
-  }
+  }catch(e){ document.getElementById("statusText").textContent = "Error: " + e.message; }
 }
 check();
 setInterval(check, 5000);
@@ -962,7 +936,7 @@ setInterval(check, 5000);
 HTML
 
 # =========================================================
-# server.py — HTTP Server + API + File Manager + Terminal Check
+# server.py
 # =========================================================
 cat > "$SERVER_DIR/server.py" <<PY
 #!/usr/bin/env python3
@@ -977,7 +951,6 @@ import urllib.parse
 
 PORT = $PORT
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-
 AUTH_TOKEN = os.environ.get("HOME_SERVER_TOKEN", "$AUTH_TOKEN")
 ALLOWED_ROOT = os.path.expanduser("~")
 
@@ -1014,41 +987,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def _terminal_port(self):
         try:
-            out = subprocess.check_output(
-                ["pgrep", "-f", "ttyd"], stderr=subprocess.DEVNULL
-            ).decode().strip()
+            out = subprocess.check_output(["pgrep", "-f", "ttyd"], stderr=subprocess.DEVNULL).decode().strip()
             return $TTYD_PORT if out else 0
         except Exception:
             return 0
 
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
-
         if path.startswith("/info.json"):
             try:
-                out = subprocess.check_output(
-                    [os.path.join(DIRECTORY, "info.sh")],
-                    timeout=10,
-                    stderr=subprocess.DEVNULL,
-                )
+                out = subprocess.check_output([os.path.join(DIRECTORY, "info.sh")], timeout=10, stderr=subprocess.DEVNULL)
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
                 self.wfile.write(out)
             except Exception:
-                self._json(200, {
-                    "cpu": {"pct": 0, "cores": 0, "freq": 0, "freq_max": 0,
-                            "model": "Error", "arch": "-"},
-                    "ram": {"total": 0, "used": 0, "avail": 0, "pct": 0},
-                    "disk": {"total": 0, "used": 0, "free": 0, "pct": 0},
-                    "net": {"iface": "-", "rx": 0, "tx": 0},
-                })
+                self._json(200, {"cpu":{"pct":0,"cores":0,"freq":0,"freq_max":0,"model":"Error","arch":"-"},"ram":{"total":0,"used":0,"avail":0,"pct":0},"disk":{"total":0,"used":0,"free":0,"pct":0},"net":{"iface":"-","rx":0,"tx":0}})
             return
 
         if path.startswith("/api/list"):
-            if not self._check_auth():
-                return
+            if not self._check_auth(): return
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             rel = qs.get("path", [""])[0]
             if not is_safe_path(ALLOWED_ROOT, rel):
@@ -1060,24 +1019,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 items = []
                 for name in sorted(os.listdir(target)):
                     fp = os.path.join(target, name)
-                    try:
-                        st = os.stat(fp)
-                    except OSError:
-                        continue
-                    items.append({
-                        "name": name,
-                        "is_dir": os.path.isdir(fp),
-                        "size": st.st_size,
-                        "mtime": int(st.st_mtime),
-                    })
+                    try: st = os.stat(fp)
+                    except OSError: continue
+                    items.append({"name": name, "is_dir": os.path.isdir(fp), "size": st.st_size, "mtime": int(st.st_mtime)})
                 self._json(200, {"ok": True, "path": rel, "items": items})
             except Exception as e:
                 self._json(500, {"ok": False, "error": str(e)})
             return
 
         if path.startswith("/api/terminal-status"):
-            port = self._terminal_port()
-            self._json(200, {"ok": True, "port": port})
+            self._json(200, {"ok": True, "port": self._terminal_port()})
             return
 
         super().do_GET()
@@ -1086,30 +1037,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
 
         if path == "/api/upload":
-            if not self._check_auth():
-                return
+            if not self._check_auth(): return
             try:
                 ctype, pdict = cgi.parse_header(self.headers.get("Content-Type", ""))
                 if ctype != "multipart/form-data":
                     return self._json(400, {"ok": False, "error": "Expected multipart"})
-                form = cgi.FieldStorage(
-                    fp=self.rfile, headers=self.headers,
-                    environ={"REQUEST_METHOD": "POST",
-                             "CONTENT_TYPE": self.headers.get("Content-Type")}
-                )
+                form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD":"POST","CONTENT_TYPE":self.headers.get("Content-Type")})
                 rel_dir = form.getvalue("path", "")
                 if not is_safe_path(ALLOWED_ROOT, rel_dir):
                     return self._json(403, {"ok": False, "error": "Forbidden"})
                 target_dir = os.path.join(ALLOWED_ROOT, rel_dir)
                 os.makedirs(target_dir, exist_ok=True)
-
                 saved = []
                 files = form["files"] if "files" in form else []
-                if not isinstance(files, list):
-                    files = [files]
+                if not isinstance(files, list): files = [files]
                 for f in files:
-                    if not getattr(f, "filename", None):
-                        continue
+                    if not getattr(f, "filename", None): continue
                     safe_name = os.path.basename(f.filename)
                     dest = os.path.join(target_dir, safe_name)
                     with open(dest, "wb") as out:
@@ -1121,8 +1064,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path == "/api/delete":
-            if not self._check_auth():
-                return
+            if not self._check_auth(): return
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 data = json.loads(self.rfile.read(length) or b"{}")
@@ -1132,10 +1074,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 target = os.path.join(ALLOWED_ROOT, rel)
                 if not os.path.exists(target):
                     return self._json(404, {"ok": False, "error": "Not found"})
-                if os.path.isdir(target):
-                    shutil.rmtree(target)
-                else:
-                    os.remove(target)
+                if os.path.isdir(target): shutil.rmtree(target)
+                else: os.remove(target)
                 self._json(200, {"ok": True})
             except Exception as e:
                 self._json(500, {"ok": False, "error": str(e)})
@@ -1155,14 +1095,11 @@ PY
 chmod +x "$SERVER_DIR/server.py"
 
 # =========================================================
-# Deteksi IP lokal
+# Deteksi IP
 # =========================================================
-IP=$(ip -4 route get 1.1.1.1 2>/dev/null |
-  awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
-
+IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
 if [ -z "$IP" ]; then
-  IP=$(ip -4 addr show wlan0 2>/dev/null |
-    awk '/inet / {sub(/\/.*/, "", $2); print $2; exit}')
+  IP=$(ip -4 addr show wlan0 2>/dev/null | awk '/inet / {sub(/\/.*/, "", $2); print $2; exit}')
 fi
 
 # =========================================================
@@ -1182,19 +1119,15 @@ echo
 echo "================================"
 echo "         SERVER SIAP"
 echo "================================"
-echo "Tema          : AVENOX v2 (Topbar + Dropdown)"
 echo "Folder server : $SERVER_DIR"
 echo "Port web      : $PORT"
 echo "Port terminal : $TTYD_PORT ($TTYD_STATUS)"
 echo "Token akses   : $AUTH_TOKEN"
 echo "IP lokal      : ${IP:-Tidak terdeteksi}"
 echo
-echo "Buka di browser perangkat lain:"
 echo "  Dashboard : http://${IP:-IP-HP-SERVER}:$PORT"
-echo "  Files     : http://${IP:-IP-HP-SERVER}:$PORT/files.html"
+echo "  File      : http://${IP:-IP-HP-SERVER}:$PORT/files.html"
 echo "  Terminal  : http://${IP:-IP-HP-SERVER}:$PORT/terminal.html"
-echo
-echo "Tekan CTRL+C untuk menghentikan server."
 echo
 
 cd "$SERVER_DIR"
