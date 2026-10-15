@@ -1,9 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # =========================================================
-#   ANDROID HOME SERVER - All in One (PERSISTENT SESSION v2)
-#   - Session ttyd tidak hilang saat pindah halaman
-#   - Tidak ada prompt "Leave site?"
-#   - iframe TIDAK reload saat balik ke terminal
+#   ANDROID HOME SERVER - All in One (PERSISTENT SESSION v3)
+#   - Session terminal tidak hilang saat pindah halaman
+#   - Network fix: paksa wlan0 + fallback /proc/net/dev
 # =========================================================
 
 set -e
@@ -25,10 +24,14 @@ pkg install -y python openssh iproute2 procps ttyd
 mkdir -p "$SERVER_DIR"
 
 # =========================================================
-# info.sh
+# info.sh — Network pakai wlan0, fallback /proc/net/dev
 # =========================================================
 cat > "$SERVER_DIR/info.sh" <<'SH'
 #!/data/data/com.termux/files/usr/bin/bash
+
+# =========================================================
+# CPU USAGE
+# =========================================================
 CPU_PCT="0.0"
 if [ -r /proc/stat ]; then
   read_cpu_stat() {
@@ -51,6 +54,9 @@ if [ "$CPU_PCT" = "0.0" ]; then
   if [ -n "$LA" ] && [ "$CORES" -gt 0 ]; then CPU_PCT=$(awk "BEGIN {p=($LA/$CORES)*100; if(p>100)p=100; printf \"%.1f\", p}"); fi
 fi
 
+# =========================================================
+# CPU INFO
+# =========================================================
 CPU_MODEL=$(awk -F: '/^[Hh]ardware/ {gsub(/^ +/,"",$2); print $2; exit}' /proc/cpuinfo 2>/dev/null)
 [ -z "$CPU_MODEL" ] && CPU_MODEL=$(awk -F: '/^[Mm]odel name/ {gsub(/^ +/,"",$2); print $2; exit}' /proc/cpuinfo 2>/dev/null)
 [ -z "$CPU_MODEL" ] && CPU_MODEL=$(getprop ro.soc.model 2>/dev/null)
@@ -65,6 +71,9 @@ CPU_FREQ_MAX=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq 2>/dev/
 [ "$CPU_FREQ" -gt 0 ] 2>/dev/null && CPU_FREQ_MHZ=$((CPU_FREQ/1000)) || CPU_FREQ_MHZ=0
 [ "$CPU_FREQ_MAX" -gt 0 ] 2>/dev/null && CPU_FREQ_MAX_MHZ=$((CPU_FREQ_MAX/1000)) || CPU_FREQ_MAX_MHZ=0
 
+# =========================================================
+# RAM
+# =========================================================
 RAM_TOTAL=$(awk '/MemTotal/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
 RAM_AVAIL=$(awk '/MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
 [ -z "$RAM_AVAIL" ] || [ "$RAM_AVAIL" = "0" ] && RAM_AVAIL=$(awk '/MemFree/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)
@@ -73,6 +82,9 @@ if [ "$RAM_TOTAL" -gt 0 ]; then
   RAM_PCT=$(awk "BEGIN {printf \"%.1f\", ($RAM_USED/$RAM_TOTAL)*100}")
 else RAM_USED=0; RAM_PCT="0.0"; fi
 
+# =========================================================
+# DISK
+# =========================================================
 DISK_INFO=$(df -k "$HOME" | awk 'NR==2 {print $2, $3, $4}')
 DISK_TOTAL=$(echo "$DISK_INFO" | awk '{printf "%.1f", $1/1024/1024}')
 DISK_USED=$(echo "$DISK_INFO"  | awk '{printf "%.1f", $2/1024/1024}')
@@ -81,16 +93,58 @@ if awk "BEGIN{exit !($DISK_TOTAL>0)}"; then
   DISK_PCT=$(awk "BEGIN {printf \"%.1f\", ($DISK_USED/$DISK_TOTAL)*100}")
 else DISK_PCT="0.0"; fi
 
-IFACE=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
-[ -z "$IFACE" ] && IFACE="wlan0"
-RX1=$(cat /sys/class/net/$IFACE/statistics/rx_bytes 2>/dev/null || echo 0)
-TX1=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
-sleep 0.5
-RX2=$(cat /sys/class/net/$IFACE/statistics/rx_bytes 2>/dev/null || echo 0)
-TX2=$(cat /sys/class/net/$IFACE/statistics/tx_bytes 2>/dev/null || echo 0)
-RX_MBPS=$(awk "BEGIN {printf \"%.2f\", (($RX2-$RX1)*8)/500000}")
-TX_MBPS=$(awk "BEGIN {printf \"%.2f\", (($TX2-$TX1)*8)/500000}")
+# =========================================================
+# NETWORK — FIX: paksa wlan0 + fallback /proc/net/dev
+# =========================================================
+IFACE="wlan0"
 
+# Fungsi baca rx/tx bytes: coba sysfs dulu, fallback ke /proc/net/dev
+read_net_bytes() {
+  local ifc="$1"
+  local rx=0 tx=0
+
+  # Strategi 1: sysfs (paling akurat)
+  if [ -r "/sys/class/net/$ifc/statistics/rx_bytes" ]; then
+    rx=$(cat "/sys/class/net/$ifc/statistics/rx_bytes" 2>/dev/null || echo 0)
+    tx=$(cat "/sys/class/net/$ifc/statistics/tx_bytes" 2>/dev/null || echo 0)
+  fi
+
+  # Strategi 2: fallback /proc/net/dev (selalu ada di Linux)
+  if [ "$rx" = "0" ] && [ "$tx" = "0" ]; then
+    local line
+    line=$(grep -E "^\s*$ifc:" /proc/net/dev 2>/dev/null | head -1)
+    if [ -n "$line" ]; then
+      # Format: iface: rx_bytes rx_packets rx_errs rx_drop ... tx_bytes ...
+      rx=$(echo "$line" | awk -F'[: ]+' '{print $3}')
+      tx=$(echo "$line" | awk -F'[: ]+' '{print $11}')
+    fi
+  fi
+
+  echo "${rx:-0} ${tx:-0}"
+}
+
+read RX1 TX1 <<< "$(read_net_bytes "$IFACE")"
+sleep 0.5
+read RX2 TX2 <<< "$(read_net_bytes "$IFACE")"
+
+# Kalau wlan0 benar-benar nggak ada (0 0), coba interface aktif lain
+if [ "$RX2" = "0" ] && [ "$TX2" = "0" ]; then
+  ALT=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="dev"){print $(i+1); exit}}')
+  if [ -n "$ALT" ] && [ "$ALT" != "wlan0" ]; then
+    IFACE="$ALT"
+    read RX1 TX1 <<< "$(read_net_bytes "$IFACE")"
+    sleep 0.5
+    read RX2 TX2 <<< "$(read_net_bytes "$IFACE")"
+  fi
+fi
+
+# Hitung Mbps (delta bytes * 8 / 0.5s / 1e6)
+RX_MBPS=$(awk "BEGIN {d=$RX2-$RX1; if(d<0)d=0; printf \"%.2f\", (d*8)/500000}")
+TX_MBPS=$(awk "BEGIN {d=$TX2-$TX1; if(d<0)d=0; printf \"%.2f\", (d*8)/500000}")
+
+# =========================================================
+# JSON
+# =========================================================
 cat <<JSON
 {
   "cpu": {"pct": $CPU_PCT, "cores": $CPU_CORES, "freq": $CPU_FREQ_MHZ, "freq_max": $CPU_FREQ_MAX_MHZ, "model": "$CPU_MODEL", "arch": "$CPU_ARCH"},
@@ -223,24 +277,28 @@ menuBtn.addEventListener('click',e=>{e.stopPropagation();const o=dropdown.classL
 document.addEventListener('click',e=>{if(!dropdown.contains(e.target)&&!menuBtn.contains(e.target)){dropdown.classList.remove('open');menuIcon.className='fa-solid fa-bars';}});
 function setBar(id,p){const e=document.getElementById(id);e.style.width=Math.min(p,100)+'%';e.className='fill'+(p>85?' crit':p>65?' warn':'');}
 function colorPct(id,p){const e=document.getElementById(id);e.className='big-pct '+(p>85?'pct-red':p>65?'pct-amber':'pct-green');}
-async function refresh(){try{const r=await fetch('/info.json?t='+Date.now());const d=await r.json();
-document.getElementById('cpu-pct').textContent=d.cpu.pct+'%';colorPct('cpu-pct',d.cpu.pct);
-document.getElementById('cpu-cores').textContent=d.cpu.cores+' core';
-document.getElementById('cpu-model').textContent=d.cpu.model;
-document.getElementById('cpu-arch').textContent=d.cpu.arch;
-let f=d.cpu.freq+' MHz';if(d.cpu.freq_max>0)f+=' / '+d.cpu.freq_max+' MHz';
-document.getElementById('cpu-freq').textContent=f;setBar('cpu-bar',d.cpu.pct);
-document.getElementById('ram-total').textContent=d.ram.total+' MB';
-document.getElementById('ram-used').textContent=d.ram.used+' MB';
-document.getElementById('ram-avail').textContent=d.ram.avail+' MB';
-document.getElementById('ram-pct').textContent=d.ram.pct+' %';setBar('ram-bar',d.ram.pct);
-document.getElementById('disk-total').textContent=d.disk.total+' GB';
-document.getElementById('disk-used').textContent=d.disk.used+' GB';
-document.getElementById('disk-free').textContent=d.disk.free+' GB';
-document.getElementById('disk-pct').textContent=d.disk.pct+' %';setBar('disk-bar',d.disk.pct);
-document.getElementById('iface').textContent=d.net.iface;
-document.getElementById('rx').textContent=d.net.rx.toFixed(2);
-document.getElementById('tx').textContent=d.net.tx.toFixed(2);}catch(e){}}
+async function refresh(){
+  try{
+    const r=await fetch('/info.json?t='+Date.now());const d=await r.json();
+    document.getElementById('cpu-pct').textContent=d.cpu.pct+'%';colorPct('cpu-pct',d.cpu.pct);
+    document.getElementById('cpu-cores').textContent=d.cpu.cores+' core';
+    document.getElementById('cpu-model').textContent=d.cpu.model;
+    document.getElementById('cpu-arch').textContent=d.cpu.arch;
+    let f=d.cpu.freq+' MHz';if(d.cpu.freq_max>0)f+=' / '+d.cpu.freq_max+' MHz';
+    document.getElementById('cpu-freq').textContent=f;setBar('cpu-bar',d.cpu.pct);
+    document.getElementById('ram-total').textContent=d.ram.total+' MB';
+    document.getElementById('ram-used').textContent=d.ram.used+' MB';
+    document.getElementById('ram-avail').textContent=d.ram.avail+' MB';
+    document.getElementById('ram-pct').textContent=d.ram.pct+' %';setBar('ram-bar',d.ram.pct);
+    document.getElementById('disk-total').textContent=d.disk.total+' GB';
+    document.getElementById('disk-used').textContent=d.disk.used+' GB';
+    document.getElementById('disk-free').textContent=d.disk.free+' GB';
+    document.getElementById('disk-pct').textContent=d.disk.pct+' %';setBar('disk-bar',d.disk.pct);
+    document.getElementById('iface').textContent=d.net.iface;
+    document.getElementById('rx').textContent=(d.net.rx||0).toFixed(2);
+    document.getElementById('tx').textContent=(d.net.tx||0).toFixed(2);
+  }catch(e){}
+}
 refresh();setInterval(refresh,2000);
 </script>
 </body>
@@ -386,7 +444,7 @@ refresh();
 HTML
 
 # =========================================================
-# terminal.html — v3 FIX: iframe tidak reload saat pindah halaman
+# terminal.html
 # =========================================================
 cat > "$SERVER_DIR/terminal.html" <<'HTML'
 <!DOCTYPE html>
@@ -476,234 +534,108 @@ cat > "$SERVER_DIR/terminal.html" <<'HTML'
   <div class="session-info" id="sessionInfo"></div>
 </div>
 <div class="toast" id="toast"></div>
-
 <script>
-/* =========================================================
- *  Multi-tab terminal
- *
- *  KUNCI FIX:
- *  - Tab tidak dihapus saat navigate (karena full reload,
- *    jadi memang state browser hilang, TAPI:
- *  - ttyd session tetap hidup di server, dan saat halaman
- *    ini load ulang kita tinggal re-mount iframe ke port
- *    yang sudah ada)
- *  - Tidak ada `beforeunload` → tidak ada prompt
- *  - Tidak reload iframe kalau sudah mount di pane yang sama
- * ========================================================= */
 const $ = id => document.getElementById(id);
+const menuBtn=$('menuBtn'),menuIcon=$('menuIcon'),dropdown=$('dropdown');
+menuBtn.addEventListener('click',e=>{e.stopPropagation();const o=dropdown.classList.toggle('open');menuIcon.className=o?'fa-solid fa-xmark':'fa-solid fa-bars';});
+document.addEventListener('click',e=>{if(!dropdown.contains(e.target)&&!menuBtn.contains(e.target)){dropdown.classList.remove('open');menuIcon.className='fa-solid fa-bars';}});
+function toast(msg,err=false){const t=$("toast");t.textContent=msg;t.className="toast show"+(err?" err":"");clearTimeout(t._to);t._to=setTimeout(()=>t.className="toast",2600);}
 
-// Dropdown
-const menuBtn = $('menuBtn'), menuIcon = $('menuIcon'), dropdown = $('dropdown');
-menuBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  const o = dropdown.classList.toggle('open');
-  menuIcon.className = o ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
-});
-document.addEventListener('click', e => {
-  if (!dropdown.contains(e.target) && !menuBtn.contains(e.target)) {
-    dropdown.classList.remove('open');
-    menuIcon.className = 'fa-solid fa-bars';
-  }
-});
+const tabs=new Map();
+let activeId=null;
+let maxSessions=6;
+let ttydAvailable=true;
 
-function toast(msg, err=false){
-  const t = $("toast");
-  t.textContent = msg;
-  t.className = "toast show" + (err ? " err" : "");
-  clearTimeout(t._to);
-  t._to = setTimeout(()=>t.className = "toast", 2600);
-}
-
-// tabs: Map<sid, {id, port, label, paneEl, iframeEl, mounted:boolean}>
-const tabs = new Map();
-let activeId = null;
-let maxSessions = 6;
-let ttydAvailable = true;
-
-/* Bikin pane + iframe baru untuk session yang BELUM pernah mount */
 function createPane(s){
-  const paneEl = document.createElement("div");
-  paneEl.className = "term-pane";
-  paneEl.dataset.id = s.id;
-
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("allow", "clipboard-read; clipboard-write");
-  iframe.src = `http://${location.hostname}:${s.port}`;
+  const paneEl=document.createElement("div");
+  paneEl.className="term-pane";
+  paneEl.dataset.id=s.id;
+  const iframe=document.createElement("iframe");
+  iframe.setAttribute("allow","clipboard-read; clipboard-write");
+  iframe.src=`http://${location.hostname}:${s.port}`;
   paneEl.appendChild(iframe);
   $("termHost").appendChild(paneEl);
-
-  return { paneEl, iframe };
+  return {paneEl,iframe};
 }
-
-/* Tambah / update entry dari server response (idempotent) */
 function upsertSession(s){
-  const existing = tabs.get(s.id);
-  if (existing){
-    // Sudah ada di DOM — jangan sentuh iframe, cuma update label
-    if (s.label) existing.label = s.label;
-    return existing;
-  }
-  const { paneEl, iframe } = createPane(s);
-  const entry = {
-    id: s.id,
-    port: s.port,
-    label: s.label || `Terminal ${tabs.size + 1}`,
-    paneEl,
-    iframe,
-    mounted: true,
-  };
-  tabs.set(s.id, entry);
+  const existing=tabs.get(s.id);
+  if(existing){if(s.label)existing.label=s.label;return existing;}
+  const {paneEl,iframe}=createPane(s);
+  const entry={id:s.id,port:s.port,label:s.label||`Terminal ${tabs.size+1}`,paneEl,iframe,mounted:true};
+  tabs.set(s.id,entry);
   return entry;
 }
-
-/* Hapus entry dari DOM */
 function removeSession(id){
-  const t = tabs.get(id);
-  if (!t) return;
-  t.paneEl.remove();
-  tabs.delete(id);
-  if (activeId === id){
-    const next = tabs.keys().next().value;
-    activeId = next || null;
-    if (next) setActive(next);
-  }
+  const t=tabs.get(id);if(!t)return;
+  t.paneEl.remove();tabs.delete(id);
+  if(activeId===id){const next=tabs.keys().next().value;activeId=next||null;if(next)setActive(next);}
 }
-
-/* Render tab bar (tanpa sentuh iframe) */
 function renderTabs(){
-  const bar = $("tabbar");
-  [...bar.querySelectorAll(".tab")].forEach(n => n.remove());
-  const addBtn = $("addTab");
-  for (const t of tabs.values()){
-    const el = document.createElement("div");
-    el.className = "tab" + (t.id === activeId ? " active" : "");
-    el.dataset.id = t.id;
-    el.innerHTML = `
-      <i class="fa-solid fa-terminal" style="font-size:11px;color:var(--text-mute)"></i>
-      <span class="tn">${t.label}</span>
-      <span class="close" title="Tutup">✕</span>
-    `;
-    el.addEventListener("click", e => {
-      if (e.target.classList.contains("close")) return;
-      setActive(t.id);
-    });
-    el.querySelector(".close").addEventListener("click", e => {
-      e.stopPropagation();
-      closeTab(t.id);
-    });
-    bar.insertBefore(el, addBtn);
+  const bar=$("tabbar");
+  [...bar.querySelectorAll(".tab")].forEach(n=>n.remove());
+  const addBtn=$("addTab");
+  for(const t of tabs.values()){
+    const el=document.createElement("div");
+    el.className="tab"+(t.id===activeId?" active":"");
+    el.dataset.id=t.id;
+    el.innerHTML=`<i class="fa-solid fa-terminal" style="font-size:11px;color:var(--text-mute)"></i><span class="tn">${t.label}</span><span class="close" title="Tutup">✕</span>`;
+    el.addEventListener("click",e=>{if(e.target.classList.contains("close"))return;setActive(t.id);});
+    el.querySelector(".close").addEventListener("click",e=>{e.stopPropagation();closeTab(t.id);});
+    bar.insertBefore(el,addBtn);
   }
-  updateAddButton();
-  updateSessionInfo();
+  updateAddButton();updateSessionInfo();
 }
-
-function updateAddButton(){
-  const btn = $("addTab");
-  const full = tabs.size >= maxSessions;
-  btn.disabled = full || !ttydAvailable;
-  btn.title = !ttydAvailable ? "ttyd tidak terinstall" : (full ? `Maksimal ${maxSessions} sesi` : "");
-}
-
-function updateSessionInfo(){
-  $("sessionInfo").textContent = `${tabs.size} / ${maxSessions} sesi aktif`;
-}
-
-function updateEmptyState(){
-  $("emptyState").style.display = tabs.size === 0 ? "flex" : "none";
-}
-
+function updateAddButton(){const btn=$("addTab");const full=tabs.size>=maxSessions;btn.disabled=full||!ttydAvailable;btn.title=!ttydAvailable?"ttyd tidak terinstall":(full?`Maksimal ${maxSessions} sesi`:"");}
+function updateSessionInfo(){$("sessionInfo").textContent=`${tabs.size} / ${maxSessions} sesi aktif`;}
+function updateEmptyState(){$("emptyState").style.display=tabs.size===0?"flex":"none";}
 function setActive(id){
-  if (!tabs.has(id)) return;
-  activeId = id;
-  for (const t of tabs.values()){
-    t.paneEl.classList.toggle("active", t.id === id);
-  }
-  // highlight tab aktif tanpa rebuild seluruh bar
-  [...document.querySelectorAll(".tab")].forEach(el => {
-    el.classList.toggle("active", el.dataset.id === id);
-  });
+  if(!tabs.has(id))return;activeId=id;
+  for(const t of tabs.values()){t.paneEl.classList.toggle("active",t.id===id);}
+  [...document.querySelectorAll(".tab")].forEach(el=>{el.classList.toggle("active",el.dataset.id===id);});
 }
-
-/* ==== Bikin session baru via API ==== */
 async function newTab(){
-  if (tabs.size >= maxSessions){ toast(`Maksimal ${maxSessions} sesi`, true); return; }
+  if(tabs.size>=maxSessions){toast(`Maksimal ${maxSessions} sesi`,true);return;}
   try{
-    const r = await fetch("/api/terminal/new", { method: "POST" });
-    const d = await r.json();
-    if (!d.ok){ toast(d.error || "Gagal membuat sesi", true); return; }
-    const entry = upsertSession({ id: d.id, port: d.port, label: d.label });
-    setActive(entry.id);
-    renderTabs();
-    updateEmptyState();
+    const r=await fetch("/api/terminal/new",{method:"POST"});
+    const d=await r.json();
+    if(!d.ok){toast(d.error||"Gagal membuat sesi",true);return;}
+    const entry=upsertSession({id:d.id,port:d.port,label:d.label});
+    setActive(entry.id);renderTabs();updateEmptyState();
     toast(`Sesi ${entry.label} dibuka`);
-  }catch(e){ toast("Error: " + e.message, true); }
+  }catch(e){toast("Error: "+e.message,true);}
 }
-
-/* ==== Tutup session ==== */
 async function closeTab(id){
-  if (!tabs.has(id)) return;
-  if (!confirm("Tutup sesi ini? Semua proses di dalamnya akan dihentikan.")) return;
-  removeSession(id);
-  renderTabs();
-  updateEmptyState();
-  try{
-    await fetch("/api/terminal/kill", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ id })
-    });
-  }catch(e){}
+  if(!tabs.has(id))return;
+  if(!confirm("Tutup sesi ini? Semua proses di dalamnya akan dihentikan."))return;
+  removeSession(id);renderTabs();updateEmptyState();
+  try{await fetch("/api/terminal/kill",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});}catch(e){}
 }
-
-/* ==== Sync dengan server ==== */
 async function syncSessions(){
   try{
-    const r = await fetch("/api/terminal-status");
-    const d = await r.json();
-    ttydAvailable = d.available;
-    maxSessions = d.max || 6;
-
-    const serverMap = new Map((d.sessions || []).map(s => [s.id, s]));
-    // hapus yang tidak ada di server
-    for (const id of [...tabs.keys()]){
-      if (!serverMap.has(id)) removeSession(id);
-    }
-    // tambah/update yang ada di server (TIDAK reload iframe yg sudah mount)
-    for (const s of serverMap.values()){
-      upsertSession(s);
-    }
-    if (!activeId && tabs.size > 0){
-      setActive(tabs.keys().next().value);
-    }
-    renderTabs();
-    updateEmptyState();
-
-    const dot = $("globalDot"), st = $("globalStatus");
-    if (ttydAvailable){
-      dot.classList.add("on");
-      st.textContent = `${tabs.size} sesi aktif`;
-    } else {
-      dot.classList.remove("on");
-      st.textContent = "ttyd tidak terinstall";
-    }
-  }catch(e){ $("globalStatus").textContent = "Error: " + e.message; }
+    const r=await fetch("/api/terminal-status");
+    const d=await r.json();
+    ttydAvailable=d.available;maxSessions=d.max||6;
+    const serverMap=new Map((d.sessions||[]).map(s=>[s.id,s]));
+    for(const id of [...tabs.keys()]){if(!serverMap.has(id))removeSession(id);}
+    for(const s of serverMap.values()){upsertSession(s);}
+    if(!activeId&&tabs.size>0){setActive(tabs.keys().next().value);}
+    renderTabs();updateEmptyState();
+    const dot=$("globalDot"),st=$("globalStatus");
+    if(ttydAvailable){dot.classList.add("on");st.textContent=`${tabs.size} sesi aktif`;}
+    else{dot.classList.remove("on");st.textContent="ttyd tidak terinstall";}
+  }catch(e){$("globalStatus").textContent="Error: "+e.message;}
 }
-
-$("addTab").addEventListener("click", newTab);
-$("emptyAdd").addEventListener("click", newTab);
-
-// ⚠️ TIDAK ADA beforeunload — pindah halaman bebas tanpa prompt.
-// Session tetap hidup di server.
-
+$("addTab").addEventListener("click",newTab);
+$("emptyAdd").addEventListener("click",newTab);
 syncSessions();
-setInterval(syncSessions, 5000);
+setInterval(syncSessions,5000);
 </script>
 </body>
 </html>
 HTML
 
 # =========================================================
-# server.py — dengan PERSISTEN SESSION
+# server.py
 # =========================================================
 cat > "$SERVER_DIR/server.py" <<PY
 #!/usr/bin/env python3
@@ -783,7 +715,7 @@ def restore_sessions():
     sessions = data.get("sessions", {})
     if not sessions:
         return
-    print(f"[restore] {len(sessions)} sesi ditemukan di state file")
+    print(f"[restore] {len(sessions)} sesi ditemukan")
     if shutil.which("ttyd") is None:
         print("[restore] ttyd tidak terinstall")
         return
@@ -904,7 +836,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     "cpu": {"pct": 0, "cores": 0, "freq": 0, "freq_max": 0, "model": "Error", "arch": "-"},
                     "ram": {"total": 0, "used": 0, "avail": 0, "pct": 0},
                     "disk": {"total": 0, "used": 0, "free": 0, "pct": 0},
-                    "net": {"iface": "-", "rx": 0, "tx": 0},
+                    "net": {"iface": "wlan0", "rx": 0, "tx": 0},
                 })
             return
 
@@ -1051,7 +983,6 @@ if [ -z "$IP" ]; then
   IP=$(ip -4 addr show wlan0 2>/dev/null | awk '/inet / {sub(/\/.*/, "", $2); print $2; exit}')
 fi
 
-# Jangan kill ttyd lama — biarkan session hidup
 pkill -f "python.*server.py" 2>/dev/null || true
 sleep 1
 
@@ -1069,9 +1000,6 @@ echo
 echo "  Dashboard : http://${IP:-IP-HP-SERVER}:$PORT"
 echo "  File      : http://${IP:-IP-HP-SERVER}:$PORT/files.html"
 echo "  Terminal  : http://${IP:-IP-HP-SERVER}:$PORT/terminal.html"
-echo
-echo "Session PERSISTEN + tidak ada prompt 'Leave site?'"
-echo "Hapus $STATE_FILE untuk reset semua session."
 echo
 echo "Tekan CTRL+C untuk menghentikan server."
 echo
